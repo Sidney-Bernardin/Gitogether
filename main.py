@@ -19,6 +19,10 @@ async def create_repo(username: str, reponame: str):
         subprocess.run(["git", "init", "--bare"], cwd=repo_path)
 
 
+async def get_repo():
+    pass
+
+
 @app.get("/{username}/{reponame}/info/refs")
 async def repo_info(username: str, reponame: str, service: str):
     repo_path = repositories_path / username / reponame
