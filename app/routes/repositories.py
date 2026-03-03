@@ -1,16 +1,14 @@
 import io
-import pathlib
 import subprocess
+from pygit2 import Repository
 
-from fastapi import FastAPI, Request, Response
+from fastapi import APIRouter, Request, Response
 from fastapi.responses import StreamingResponse
 
-repositories_path = pathlib.Path("tmp/gitogether/repositories")
-
-app = FastAPI()
+router = APIRouter()
 
 
-@app.post("/{username}/{reponame}")
+@router.post("/{username}/{reponame}")
 async def create_repo(username: str, reponame: str):
     repo_path = repositories_path / username / reponame
     repo_path.mkdir(parents=True, exist_ok=True)
@@ -19,11 +17,16 @@ async def create_repo(username: str, reponame: str):
         subprocess.run(["git", "init", "--bare"], cwd=repo_path)
 
 
-async def get_repo():
-    pass
+@router.get("/{username}/{reponame}")
+async def get_repo(username: str, reponame: str):
+    repo_path = repositories_path / username / reponame
+    repo_path.mkdir(parents=True, exist_ok=True)
+    repo = Repository(repo_path)
+    for x in repo[repo.head.target].tree:
+        print(x.name, x.type_str)
 
 
-@app.get("/{username}/{reponame}/info/refs")
+@router.get("/{username}/{reponame}/info/refs")
 async def repo_info(username: str, reponame: str, service: str):
     repo_path = repositories_path / username / reponame
     if not (repo_path).exists():
@@ -44,7 +47,7 @@ async def repo_info(username: str, reponame: str, service: str):
     return Response(content=res, media_type=f"application/x-{service}-advertisement")
 
 
-@app.post("/{username}/{reponame}/{service}")
+@router.post("/{username}/{reponame}/{service}")
 async def repo_service(req: Request, username: str, reponame: str, service: str):
     repo_path = repositories_path / username / reponame
     if not (repo_path).exists():

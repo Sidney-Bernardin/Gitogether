@@ -6,3 +6,12 @@ services:
       dockerfile: Dockerfile
     ports:
       - 8000:8000
+
+  postgres:
+    image: postgres:18.3
+    environment:
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - 5432:5432
