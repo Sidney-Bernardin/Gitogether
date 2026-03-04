@@ -3,5 +3,9 @@
 {% block title %}Gitogether{% endblock %}
 
 {% block content %}
-home
+<form hx-post="/repositories">
+    <h1>Create Repo</h1>
+    <input type="text" name="reponame">
+    <input type="submit">
+</form>
 {% endblock %}

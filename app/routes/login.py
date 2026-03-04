@@ -38,24 +38,22 @@ async def signup(req: Request, res: Response):
 
     # Validate form.
     if not isinstance(username, str) or not isinstance(password, str):
-        return '<p class="error">Username and password are required</p>'
+        return "Username and password are required"
     if len(username) < 3:
-        return '<p class="error">Username must be at least 3 characters</p>'
+        return "Username must be at least 3 characters"
     if len(password) < 6:
-        return '<p class="error">Password must be at least 6 characters</p>'
+        return "Password must be at least 6 characters"
+
+    user_id = uuid4()
+    pw_salt = bcrypt.gensalt()
+    pw_hashed = bcrypt.hashpw(password.encode(), pw_salt)
 
     async with req.app.state.pg.acquire() as conn:
         conn: Connection
 
         # Check username.
         if await conn.fetchrow("""SELECT user_id FROM users WHERE username = $1""", username):
-            return '<p class="error">Username already taken</p>'
-
-        # Hash password.
-        pw_salt = bcrypt.gensalt()
-        pw_hashed = bcrypt.hashpw(password.encode(), pw_salt)
-
-        user_id = uuid4()
+            return "Username already taken"
 
         # Insert a new user.
         await conn.execute("""INSERT INTO users (user_id, username, password_hash, password_salt) VALUES ($1, $2, $3, $4)""", user_id, username, pw_hashed, pw_salt)
@@ -74,7 +72,7 @@ async def signin(req: Request, res: Response):
 
     # Validate form.
     if not isinstance(username, str) or not isinstance(password, str):
-        return '<p class="error">Username and password are required</p>'
+        return "Username and password are required"
 
     async with req.app.state.pg.acquire() as conn:
         conn: Connection
@@ -82,7 +80,7 @@ async def signin(req: Request, res: Response):
         # Get the user and check it's password.
         row = await conn.fetchrow("""SELECT user_id, username, password_hash FROM users WHERE username = $1""", username)
         if not row or not bcrypt.checkpw(password.encode(), row["password_hash"]):
-            return '<p class="error">Invalid username or password</p>'
+            return "Invalid username or password"
 
     set_new_session(res, row["user_id"], row["username"])
     res.headers["HX-Redirect"] = "/"
