@@ -1,5 +1,4 @@
 import io
-from typing import Annotated, Any
 import bcrypt
 import subprocess
 import asyncpg
@@ -8,10 +7,10 @@ import uuid
 import pygit2
 import pygit2.enums
 
-from fastapi import APIRouter, Depends, Request, Response, status
+from fastapi import APIRouter, Request, Response, status
 from fastapi.responses import StreamingResponse
 
-from app.dependencies import GetBasicCredentials, http_basic_auth, SessionAuth, templates, repositories_path
+from app.dependencies import http_basic_auth, SessionAuth, templates, repositories_path
 
 router = APIRouter()
 
@@ -59,8 +58,7 @@ async def create_repo(req: Request, session: SessionAuth):
 
 
 @router.get("/{username}/{repo_name}/info/refs")
-async def repo_info(req: Request, credentials: Annotated[Any, Depends(http_basic_auth)], username: str, repo_name: str, service: str):
-    print(credentials)
+async def repo_info(req: Request, credentials: http_basic_auth, username: str, repo_name: str, service: str):
     try:
         async with req.app.state.pg.acquire() as conn:
             conn: asyncpg.Connection
@@ -137,14 +135,10 @@ async def get_repo(req: Request, session: SessionAuth, username: str, repo_name:
 
 
 @router.post("/{username}/{repo_name}/{service}")
-async def repo_service(req: Request, credentials: GetBasicCredentials, username: str, repo_name: str, service: str):
+async def repo_service(req: Request, credentials: http_basic_auth, username: str, repo_name: str, service: str):
     try:
         async with req.app.state.pg.acquire() as conn:
             conn: asyncpg.Connection
-
-            repo = await conn.fetchrow("""SELECT public FROM repositories WHERE name = $1""", repo_name)
-            if not repo:
-                return Response(status_code=status.HTTP_404_NOT_FOUND)
 
             # Get the user and check it's password.
             user = await conn.fetchrow("""SELECT user_id, username, password FROM users WHERE username = $1""", credentials.username)

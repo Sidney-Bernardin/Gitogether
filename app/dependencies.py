@@ -1,12 +1,10 @@
 import os
-import bcrypt
-import fastapi
 import jwt
 import pathlib
 import asyncpg
 from typing import Annotated, Any
 
-from fastapi import Depends, HTTPException, Request, Response, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.templating import Jinja2Templates
 
@@ -19,8 +17,6 @@ class Config:
 
 templates = Jinja2Templates(os.path.join(os.path.dirname(__file__), "templates"))
 repositories_path = pathlib.Path("tmp/gitogether/repositories")
-get_basic_credentials = HTTPBasic()
-GetBasicCredentials = Annotated[Any, Depends(get_basic_credentials)]
 
 
 def session_auth(req: Request):
@@ -38,9 +34,6 @@ SessionAuth = Annotated[Any, Depends(session_auth)]
 
 
 class HTTPBasicAuth(HTTPBasic):
-    def __init__(self):
-        print("init")
-
     async def __call__(self, req: Request, repo_name: str) -> HTTPBasicCredentials | None:
         async with req.app.state.pg.acquire() as conn:
             conn: asyncpg.Connection
@@ -52,4 +45,5 @@ class HTTPBasicAuth(HTTPBasic):
         return await super().__call__(req)
 
 
-http_basic_auth = Annotated[HTTPBasicCredentials, Depends(HTTPBasicAuth())]
+_http_basic_auth = HTTPBasicAuth()
+http_basic_auth = Annotated[HTTPBasicCredentials, Depends(_http_basic_auth)]
