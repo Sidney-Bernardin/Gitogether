@@ -2,17 +2,16 @@ CREATE TABLE users (
     user_id uuid PRIMARY KEY,
 
     username text NOT NULL,
-    password_hash bytea NOT NULL,
-    password_salt bytea NOT NULL
+    password bytea NOT NULL
 );
 
 CREATE TABLE repositories (
     repository_id uuid PRIMARY KEY,
 
     name text NOT NULL UNIQUE,
+    public boolean,
     stars int NOT NULL,
 
-    owner_id uuid NOT NULL REFERENCES users(user_id),
     fork_of uuid REFERENCES repositories(repository_id)
 );
 
@@ -24,4 +23,13 @@ CREATE TABLE pull_requests (
 
     target_repository uuid REFERENCES repositories(repository_id),
     source_repository uuid REFERENCES repositories(repository_id)
+);
+
+CREATE TABLE repository_users (
+    repository_id uuid REFERENCES repositories(repository_id),
+    user_id uuid REFERENCES users(user_id),
+
+    role text NOT NULL,
+
+    PRIMARY KEY (repository_id, user_id)
 );

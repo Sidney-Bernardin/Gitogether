@@ -1,15 +1,17 @@
 import io
+from typing import Annotated, Any
+import bcrypt
 import subprocess
-from uuid import uuid4
-from asyncpg import Connection, UniqueViolationError
-from pygit2 import Blob, GitError, InvalidSpecError, Repository, Tree
-from pygit2.enums import ObjectType, RepositoryInitFlag
+import asyncpg
+import uuid
 
-from fastapi import APIRouter, Request, Response
-from fastapi.responses import StreamingResponse
 import pygit2
+import pygit2.enums
 
-from app.dependencies import SessionAuth, templates, repositories_path
+from fastapi import APIRouter, Depends, Request, Response, status
+from fastapi.responses import StreamingResponse
+
+from app.dependencies import GetBasicCredentials, http_basic_auth, SessionAuth, templates, repositories_path
 
 router = APIRouter()
 
@@ -24,42 +26,80 @@ async def create_repo(req: Request, session: SessionAuth):
         form = await req.form()
         reponame = form.get("reponame")
 
-        repository_id = uuid4()
+        repository_id = uuid.uuid4()
 
         async with req.app.state.pg.acquire() as conn:
-            conn: Connection
+            conn: asyncpg.Connection
             async with conn.transaction():
 
                 # Insert a new repository.
-                await conn.execute("""INSERT INTO repositories (repository_id, name, stars, owner_id) VALUES ($1, $2, $3, $4)""", repository_id, reponame, 0, session["sub"])
+                await conn.execute(
+                    """INSERT INTO repositories (repository_id, name, stars) VALUES ($1, $2, $3)""",
+                    repository_id,
+                    reponame,
+                    0,
+                )
+                await conn.execute(
+                    """INSERT INTO repository_users (repository_id, user_id, role) VALUES ($1, $2, $3)""",
+                    repository_id,
+                    session["sub"],
+                    "admin",
+                )
 
                 # Init new repository.
                 repo_path = repositories_path / session["username"] / reponame
-                pygit2.init_repository(repo_path, bare=True, flags=RepositoryInitFlag.MKPATH | RepositoryInitFlag.NO_REINIT)
+                pygit2.init_repository(
+                    repo_path,
+                    bare=True,
+                    flags=pygit2.enums.RepositoryInitFlag.MKPATH | pygit2.enums.RepositoryInitFlag.NO_REINIT,
+                )
 
-    except UniqueViolationError:
+    except asyncpg.UniqueViolationError:
         return """<p class="error">name taken</p>"""
 
 
-@router.get("/{username}/{reponame}/info/refs")
-async def repo_info(username: str, reponame: str, service: str):
-    repo_path = repositories_path / username / reponame
-    if not (repo_path).exists():
-        return Response(status_code=404)
+@router.get("/{username}/{repo_name}/info/refs")
+async def repo_info(req: Request, credentials: Annotated[Any, Depends(http_basic_auth)], username: str, repo_name: str, service: str):
+    print(credentials)
+    try:
+        async with req.app.state.pg.acquire() as conn:
+            conn: asyncpg.Connection
 
-    stdout = subprocess.run(
-        ["git", service[4:], "--stateless-rpc", "--advertise-refs", "."],
-        cwd=repo_path,
-        capture_output=True,
-    ).stdout
+            repo = await conn.fetchrow("""SELECT repository_id FROM repositories WHERE name = $1""", repo_name)
+            if not repo:
+                return Response(status_code=status.HTTP_404_NOT_FOUND)
 
-    # Formate response.
-    res = b"# service=" + service.encode()
-    l = len(res) + 4
-    l = b"%04x" % l  # Convert length into hexadecimal.
-    res = l + res + b"0000" + stdout
+            user = await conn.fetchrow(
+                """
+                SELECT u.password FROM users u
+                LEFT JOIN repository_users ru ON ru.user_id = u.user_id
+                WHERE
+                    u.username = $1 AND
+                    ru.repository_id = $2
+                """,
+                credentials.username,
+                repo["repository_id"],
+            )
 
-    return Response(content=res, media_type=f"application/x-{service}-advertisement")
+            if not user or not bcrypt.checkpw(credentials.password.encode(), user["password"]):
+                return Response(status_code=status.HTTP_401_UNAUTHORIZED)
+
+        stdout = subprocess.run(
+            ["git", service[4:], "--stateless-rpc", "--advertise-refs", "."],
+            cwd=repositories_path / username / repo_name,
+            capture_output=True,
+        ).stdout
+
+        # Formate response.
+        res = b"# service=" + service.encode()
+        l = len(res) + 4
+        l = b"%04x" % l  # Convert length into hexadecimal.
+        res = l + res + b"0000" + stdout
+
+        return Response(content=res, media_type=f"application/x-{service}-advertisement")
+
+    except FileNotFoundError:
+        return Response(status_code=status.HTTP_404_NOT_FOUND)
 
 
 @router.get("/{username}/{repo_name}")
@@ -76,51 +116,64 @@ async def get_repo(req: Request, session: SessionAuth, username: str, repo_name:
 
     try:
         async with req.app.state.pg.acquire() as conn:
-            conn: Connection
+            conn: asyncpg.Connection
             ctx["repo_info"] = await conn.fetch("""SELECT repository_id, name, stars, owner_id, fork_of FROM repositories WHERE name = $1""", repo_name)
 
-        repo = Repository(repositories_path / username / repo_name)
+        repo = pygit2.Repository(repositories_path / username / repo_name)
         obj = repo.revparse_single(f"{commit or repo.head.target}:{path}")
 
-        if isinstance(obj, Tree):
+        if isinstance(obj, pygit2.Tree):
             ctx["tree"] = []
             for x in obj:
                 ctx["tree"].append(f"{x.type_str} {x.name}")
-        elif isinstance(obj, Blob):
+        elif isinstance(obj, pygit2.Blob):
             ctx["blob"] = obj.read_raw().decode()
 
         return templates.TemplateResponse("pages/repository.html", ctx)
 
-    except GitError as err:
+    except pygit2.GitError as err:
         if err.args[0] == "reference 'refs/heads/master' not found":
             pass
 
 
-@router.post("/{username}/{reponame}/{service}")
-async def repo_service(req: Request, username: str, reponame: str, service: str):
-    repo_path = repositories_path / username / reponame
-    if not (repo_path).exists():
-        return Response(status_code=404)
-
-    process = subprocess.Popen(
-        ["git", service[4:], "--stateless-rpc", "."],
-        cwd=repo_path,
-        stdout=subprocess.PIPE,
-        stdin=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
-
-    if not process.stdout or not process.stdin:
-        return
-
-    async for chunk in req.stream():
-        process.stdin.write(chunk)
-
-    stdout, stderr = process.communicate()
+@router.post("/{username}/{repo_name}/{service}")
+async def repo_service(req: Request, credentials: GetBasicCredentials, username: str, repo_name: str, service: str):
     try:
-        stdout = io.BytesIO(stdout)
-    finally:
-        if process.wait() != 0:
-            print(stderr)
+        async with req.app.state.pg.acquire() as conn:
+            conn: asyncpg.Connection
 
-    return StreamingResponse(content=stdout, media_type=f"application/x-{service}-result")
+            repo = await conn.fetchrow("""SELECT public FROM repositories WHERE name = $1""", repo_name)
+            if not repo:
+                return Response(status_code=status.HTTP_404_NOT_FOUND)
+
+            # Get the user and check it's password.
+            user = await conn.fetchrow("""SELECT user_id, username, password FROM users WHERE username = $1""", credentials.username)
+            if not user or not bcrypt.checkpw(credentials.password.encode(), user["password"]):
+                return Response(status_code=status.HTTP_401_UNAUTHORIZED)
+
+        process = subprocess.Popen(
+            ["git", service[4:], "--stateless-rpc", "."],
+            cwd=repositories_path / username / repo_name,
+            stdout=subprocess.PIPE,
+            stdin=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        if not process.stdin:
+            print(f"========== {req.url}: stdin is None ==========")
+            return
+
+        async for chunk in req.stream():
+            process.stdin.write(chunk)
+
+        stdout, stderr = process.communicate()
+        try:
+            stdout = io.BytesIO(stdout)
+        finally:
+            if process.wait() != 0:
+                print(stderr)
+
+        return StreamingResponse(content=stdout, media_type=f"application/x-{service}-result")
+
+    except FileNotFoundError:
+        return Response(status_code=status.HTTP_404_NOT_FOUND)

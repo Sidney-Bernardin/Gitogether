@@ -45,8 +45,7 @@ async def signup(req: Request, res: Response):
         return "Password must be at least 6 characters"
 
     user_id = uuid4()
-    pw_salt = bcrypt.gensalt()
-    pw_hashed = bcrypt.hashpw(password.encode(), pw_salt)
+    password_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
 
     async with req.app.state.pg.acquire() as conn:
         conn: Connection
@@ -56,7 +55,7 @@ async def signup(req: Request, res: Response):
             return "Username already taken"
 
         # Insert a new user.
-        await conn.execute("""INSERT INTO users (user_id, username, password_hash, password_salt) VALUES ($1, $2, $3, $4)""", user_id, username, pw_hashed, pw_salt)
+        await conn.execute("""INSERT INTO users (user_id, username, password) VALUES ($1, $2, $3)""", user_id, username, password_hash)
 
     set_new_session(res, user_id, username)
     res.headers["HX-Redirect"] = "/"
@@ -78,11 +77,11 @@ async def signin(req: Request, res: Response):
         conn: Connection
 
         # Get the user and check it's password.
-        row = await conn.fetchrow("""SELECT user_id, username, password_hash FROM users WHERE username = $1""", username)
-        if not row or not bcrypt.checkpw(password.encode(), row["password_hash"]):
+        user = await conn.fetchrow("""SELECT user_id, username, password FROM users WHERE username = $1""", username)
+        if not user or not bcrypt.checkpw(password.encode(), user["password"]):
             return "Invalid username or password"
 
-    set_new_session(res, row["user_id"], row["username"])
+    set_new_session(res, user["user_id"], user["username"])
     res.headers["HX-Redirect"] = "/"
 
 
