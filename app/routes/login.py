@@ -31,12 +31,10 @@ def signout(res: Response):
 @router.post("/signup")
 async def signup(req: Request, res: Response):
 
-    # Get form data.
     form = await req.form()
     username = form.get("username")
     password = form.get("password")
 
-    # Validate form.
     if not isinstance(username, str) or not isinstance(password, str):
         return "Username and password are required"
     if len(username) < 3:
@@ -50,11 +48,9 @@ async def signup(req: Request, res: Response):
     async with req.app.state.pg.acquire() as conn:
         conn: Connection
 
-        # Check username.
         if await conn.fetchrow("""SELECT user_id FROM users WHERE username = $1""", username):
             return "Username already taken"
 
-        # Insert a new user.
         await conn.execute("""INSERT INTO users (user_id, username, password) VALUES ($1, $2, $3)""", user_id, username, password_hash)
 
     set_new_session(res, user_id, username)
@@ -64,19 +60,16 @@ async def signup(req: Request, res: Response):
 @router.post("/signin")
 async def signin(req: Request, res: Response):
 
-    # Get form data.
     form = await req.form()
     username = form.get("username")
     password = form.get("password")
 
-    # Validate form.
     if not isinstance(username, str) or not isinstance(password, str):
         return "Username and password are required"
 
     async with req.app.state.pg.acquire() as conn:
         conn: Connection
 
-        # Get the user and check it's password.
         user = await conn.fetchrow("""SELECT user_id, username, password FROM users WHERE username = $1""", username)
         if not user or not bcrypt.checkpw(password.encode(), user["password"]):
             return "Invalid username or password"

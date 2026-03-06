@@ -4,7 +4,11 @@
 
 {% block content %}
 {% if tree %}
-    {{ tree }}
+    <ul>
+        {% for obj in tree %}
+            <a href="{{ url_for('repository', username=username, repo_name=repo_name, commit=commit, path=(path or "") + obj.name) }}">{{ obj.name }}</a>
+        {% endfor %}
+    </ul>
 {%elif blob %}
     {{ blob }}
 {% else %}

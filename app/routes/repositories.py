@@ -21,7 +21,6 @@ async def create_repo(req: Request, session: SessionAuth):
         if not session:
             return Response(status_code=401)
 
-        # Get form data.
         form = await req.form()
         reponame = form.get("reponame")
 
@@ -31,7 +30,6 @@ async def create_repo(req: Request, session: SessionAuth):
             conn: asyncpg.Connection
             async with conn.transaction():
 
-                # Insert a new repository.
                 await conn.execute(
                     """INSERT INTO repositories (repository_id, name, stars) VALUES ($1, $2, $3)""",
                     repository_id,
@@ -45,7 +43,6 @@ async def create_repo(req: Request, session: SessionAuth):
                     "admin",
                 )
 
-                # Init new repository.
                 repo_path = repositories_path / session["username"] / reponame
                 pygit2.init_repository(
                     repo_path,
@@ -100,13 +97,16 @@ async def repo_info(req: Request, credentials: http_basic_auth, username: str, r
         return Response(status_code=status.HTTP_404_NOT_FOUND)
 
 
-@router.get("/{username}/{repo_name}")
-@router.get("/{username}/{repo_name}/{commit}")
-@router.get("/{username}/{repo_name}/{commit}/{path:path}")
+@router.get("/{username}/{repo_name}", name="repository")
+@router.get("/{username}/{repo_name}/{commit}", name="repository")
+@router.get("/{username}/{repo_name}/{commit}/{path:path}", name="repository")
 async def get_repo(req: Request, session: SessionAuth, username: str, repo_name: str, commit: str | None = None, path: str = ""):
     ctx = {
         "request": req,
         "session": session,
+        "username": username,
+        "repo_name": repo_name,
+        "path": f"{path}/" if path else "",
         "repo_info": None,
         "tree": None,
         "blob": None,
@@ -115,21 +115,23 @@ async def get_repo(req: Request, session: SessionAuth, username: str, repo_name:
     try:
         async with req.app.state.pg.acquire() as conn:
             conn: asyncpg.Connection
-            ctx["repo_info"] = await conn.fetch("""SELECT repository_id, name, stars, owner_id, fork_of FROM repositories WHERE name = $1""", repo_name)
+            ctx["repo_info"] = await conn.fetch("""SELECT repository_id, name, stars, fork_of, public FROM repositories WHERE name = $1""", repo_name)
 
         repo = pygit2.Repository(repositories_path / username / repo_name)
-        obj = repo.revparse_single(f"{commit or repo.head.target}:{path}")
+        ctx["commit"] = commit or repo.head.target
+        obj = repo.revparse_single(f"{ctx["commit"]}:{path}")
 
         if isinstance(obj, pygit2.Tree):
             ctx["tree"] = []
             for x in obj:
-                ctx["tree"].append(f"{x.type_str} {x.name}")
+                ctx["tree"].append(x)
         elif isinstance(obj, pygit2.Blob):
             ctx["blob"] = obj.read_raw().decode()
 
         return templates.TemplateResponse("pages/repository.html", ctx)
 
     except pygit2.GitError as err:
+        print(err)
         if err.args[0] == "reference 'refs/heads/master' not found":
             pass
 
@@ -140,7 +142,6 @@ async def repo_service(req: Request, credentials: http_basic_auth, username: str
         async with req.app.state.pg.acquire() as conn:
             conn: asyncpg.Connection
 
-            # Get the user and check it's password.
             user = await conn.fetchrow("""SELECT user_id, username, password FROM users WHERE username = $1""", credentials.username)
             if not user or not bcrypt.checkpw(credentials.password.encode(), user["password"]):
                 return Response(status_code=status.HTTP_401_UNAUTHORIZED)
