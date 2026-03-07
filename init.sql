@@ -8,11 +8,13 @@ CREATE TABLE users (
 CREATE TABLE repositories (
     repository_id uuid PRIMARY KEY,
 
-    name text NOT NULL UNIQUE,
+    name text NOT NULL,
     public boolean,
     stars int NOT NULL,
 
-    fork_of uuid REFERENCES repositories(repository_id)
+    fork_of uuid REFERENCES repositories(repository_id),
+
+    owner_id uuid REFERENCES users(user_id)
 );
 
 CREATE TABLE pull_requests (
@@ -25,7 +27,7 @@ CREATE TABLE pull_requests (
     source_repository uuid REFERENCES repositories(repository_id)
 );
 
-CREATE TABLE repository_users (
+CREATE TABLE repository_contributors (
     repository_id uuid REFERENCES repositories(repository_id),
     user_id uuid REFERENCES users(user_id),
 

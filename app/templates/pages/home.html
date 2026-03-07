@@ -3,16 +3,5 @@
 {% block title %}Gitogether{% endblock %}
 
 {% block content %}
-<form hx-post="/repositories">
-    <h1>Create Repo</h1>
-    <input type="text" name="reponame">
-    <input type="submit">
-</form>
-<ul>
-    {% for repo in repositories %}
-        <li>
-            <a href="{{ url_for('repository', username=session.username, repo_name=repo.name) }}">{{ repo.name }}</a>
-        </li>
-    {% endfor %}
-</ul>
+home
 {% endblock %}

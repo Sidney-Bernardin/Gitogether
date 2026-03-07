@@ -9,9 +9,11 @@
             <a href="{{ url_for('repository', username=username, repo_name=repo_name, commit=commit, path=(path or "") + obj.name) }}">{{ obj.name }}</a>
         {% endfor %}
     </ul>
-{%elif blob %}
+{% elif blob %}
     {{ blob }}
-{% else %}
-    emply...
+{% elif not commit %}
+no commits
+{% elif not_found %}
+    Not Found
 {% endif %}
 {% endblock %}

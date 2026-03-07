@@ -1,10 +1,11 @@
 import os
 import jwt
+import bcrypt
 import pathlib
 import asyncpg
-from typing import Annotated, Any
+from typing import Annotated, Any, Tuple
 
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Depends, HTTPException, Request, Response, status
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.templating import Jinja2Templates
 
@@ -30,20 +31,51 @@ def session_auth(req: Request):
         return None
 
 
-SessionAuth = Annotated[Any, Depends(session_auth)]
+SessionAuth = Annotated[dict | None, Depends(session_auth)]
 
 
-class HTTPBasicAuth(HTTPBasic):
-    async def __call__(self, req: Request, repo_name: str) -> HTTPBasicCredentials | None:
+class GitAuth(HTTPBasic):
+    async def __call__(self, req: Request, username: str, repo_name: str, service: str) -> dict:
         async with req.app.state.pg.acquire() as conn:
             conn: asyncpg.Connection
 
-            repo = await conn.fetchrow("""SELECT public FROM repositories WHERE name = $1""", repo_name)
+            repo = await conn.fetchrow(
+                """
+                SELECT repository_id, public
+                FROM repositories r
+                LEFT JOIN users u ON u.user_id = r.owner_id
+                WHERE u.username = $1 AND r.name = $2
+                """,
+                username,
+                repo_name,
+            )
             if not repo:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
-        return await super().__call__(req)
+            if repo["public"] and service == "git-upload-pack":
+                return repo
+
+            credentials = await super().__call__(req)
+            if not credentials:
+                raise Exception("===== NOT credentials =====")
+
+            user = await conn.fetchrow(
+                """
+                SELECT u.password FROM users u
+                LEFT JOIN repositories r ON r.owner_id = u.user_id
+                WHERE
+                    u.username = $1 AND
+                    r.repository_id = $2
+                """,
+                credentials.username,
+                repo["repository_id"],
+            )
+
+            if not user or not bcrypt.checkpw(credentials.password.encode(), user["password"]):
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+
+        return repo
 
 
-_http_basic_auth = HTTPBasicAuth()
-http_basic_auth = Annotated[HTTPBasicCredentials, Depends(_http_basic_auth)]
+_git_auth = GitAuth()
+git_auth = Annotated[dict, Depends(_git_auth)]
