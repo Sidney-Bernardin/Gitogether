@@ -11,9 +11,9 @@
     </ul>
 {% elif blob %}
     {{ blob }}
-{% elif not commit %}
-no commits
 {% elif not_found %}
     Not Found
+{% elif not commit %}
+no commits
 {% endif %}
 {% endblock %}

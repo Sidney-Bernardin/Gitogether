@@ -1,0 +1,14 @@
+{% macro repository(view, username, repo, is_owner) %}
+    {% if view == "list-item" %}
+        <li>
+            <a href="{{ url_for('repository', username=username, repo_name=repo.name) }}">
+                {{ repo.name }}
+            </a>
+            {% if is_owner and not repo.public %}
+                <span>(private)</span>
+            {% endif %}
+        </li>
+    {% endif %}
+{% endmacro %}
+
+{{ repository(view, username, repo, is_owner) }}

@@ -3,10 +3,10 @@ import jwt
 import bcrypt
 import pathlib
 import asyncpg
-from typing import Annotated, Any, Tuple
+from typing import Annotated
 
-from fastapi import Depends, HTTPException, Request, Response, status
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi import Depends, HTTPException, Request, status
+from fastapi.security import HTTPBasic
 from fastapi.templating import Jinja2Templates
 
 

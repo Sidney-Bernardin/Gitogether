@@ -1,3 +1,4 @@
+import jinja2
 import io
 import bcrypt
 import subprocess
@@ -57,6 +58,16 @@ async def create_repo(req: Request, session: SessionAuth):
                     flags=pygit2.enums.RepositoryInitFlag.MKPATH | pygit2.enums.RepositoryInitFlag.NO_REINIT,
                 )
 
+        repo = {
+            "repository_id": repository_id,
+            "name": repo_name,
+            "public": public,
+        }
+        return templates.TemplateResponse(
+            "repository.html",
+            context={"request": req, "view": "list-item", "username": session["username"], "repo": repo, "is_owner": True},
+        )
+
     except asyncpg.UniqueViolationError:
         return """<p class="error">name taken</p>"""
 
@@ -100,7 +111,23 @@ async def get_repo(req: Request, session: SessionAuth, username: str, repo_name:
     try:
         async with req.app.state.pg.acquire() as conn:
             conn: asyncpg.Connection
-            ctx["repo_info"] = await conn.fetch("""SELECT repository_id, name, stars, fork_of, public FROM repositories WHERE name = $1""", repo_name)
+            ctx["repo_info"] = await conn.fetchrow(
+                """
+                SELECT repository_id, name, stars, fork_of, public
+                FROM repositories
+                WHERE
+                    name = $1 AND
+                    EXISTS (
+                        SELECT FROM users
+                        WHERE username = $2
+                    )
+                """,
+                repo_name,
+                username,
+            )
+            if not ctx["repo_info"]:
+                ctx["not_found"] = True
+                return templates.TemplateResponse("pages/repository.html", ctx)
 
         repo = pygit2.Repository(repositories_path / username / repo_name)
         ctx["commit"] = commit or repo.head.target

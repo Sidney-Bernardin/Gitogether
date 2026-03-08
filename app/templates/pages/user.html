@@ -7,7 +7,7 @@
 
 {% if is_owner %}
 <h2>Create Repository</h2>
-<form hx-post="/repositories">
+<form hx-post="/repositories" hx-target="#repositories" hx-swap="beforeend">
     <label for="repo_name">Name</label>
     <input type="text" name="repo_name" placeholder="Repository Name">
 
@@ -18,7 +18,7 @@
 {% endif %}
 
 <h2>Repositories</h2>
-<ul>
+<ul id="repositories">
     {% for repo in repositories %}
         <li>
             <a href="{{ url_for('repository', username=user.username, repo_name=repo.name) }}">{{ repo.name }}</a>
