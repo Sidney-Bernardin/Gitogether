@@ -1,12 +1,14 @@
 {% extends "pages/layout.html" %}
 
-{% block title %}{{ repo_info.name }}{% endblock %}
+{% block title %}{{ repo.name }}{% endblock %}
 
 {% block content %}
 {% if tree %}
     <ul>
-        {% for obj in tree %}
-            <a href="{{ url_for('repository', username=username, repo_name=repo_name, commit=commit, path=(path or "") + obj.name) }}">{{ obj.name }}</a>
+        {% for file in tree %}
+            <a href="{{ url_for('repository', username=username, repo_name=repo.name, commit=commit, path=(f"{path}/" if path else "") + file.name) }}">
+                {{ file.name }}
+            </a>
         {% endfor %}
     </ul>
 {% elif blob %}
@@ -14,6 +16,6 @@
 {% elif not_found %}
     Not Found
 {% elif not commit %}
-no commits
+    no commits
 {% endif %}
 {% endblock %}

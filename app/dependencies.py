@@ -1,28 +1,26 @@
 import os
 import jwt
 import bcrypt
-import pathlib
 import asyncpg
-from typing import Annotated
+from typing import Annotated, Tuple
+from pygit2 import Repository
 
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPBasic
 from fastapi.templating import Jinja2Templates
+from fastapi.datastructures import FormData
+from starlette.datastructures import UploadFile
 
-
-class Config:
-    jwt_secret = os.getenv("APP_JWT_SECRET", "foobarbaz")
-    session_expiry_hours = int(os.getenv("APP_SESSION_EXPIRY_HOURS", "24"))
-    postgres_url = os.getenv("APP_POSTGRES_URL", "postgresql://postgres:postgres@localhost:5432/postgres")
-
+from app.config import Config
+from app.domain import User
 
 templates = Jinja2Templates(os.path.join(os.path.dirname(__file__), "templates"))
-repositories_path = pathlib.Path("tmp/gitogether/repositories")
 
 
 def session_auth(req: Request):
     try:
-        return jwt.decode(req.cookies["session"], Config.jwt_secret, algorithms=["HS256"])
+        session = jwt.decode(req.cookies["session"], Config.jwt_secret, algorithms=["HS256"])
+        return User.model_validate(session, extra="ignore")
     except jwt.ExpiredSignatureError:
         return None
     except jwt.InvalidTokenError:
@@ -31,11 +29,11 @@ def session_auth(req: Request):
         return None
 
 
-SessionAuth = Annotated[dict | None, Depends(session_auth)]
+SessionAuth = Annotated[User | None, Depends(session_auth)]
 
 
 class GitAuth(HTTPBasic):
-    async def __call__(self, req: Request, username: str, repo_name: str, service: str) -> dict:
+    async def __call__(self, req: Request, username: str, repo_name: str, service: str) -> Tuple[User | None, Repository]:
         async with req.app.state.pg.acquire() as conn:
             conn: asyncpg.Connection
 
@@ -53,11 +51,10 @@ class GitAuth(HTTPBasic):
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
             if repo["public"] and service == "git-upload-pack":
-                return repo
+                return (None, repo)
 
             credentials = await super().__call__(req)
-            if not credentials:
-                raise Exception("===== NOT credentials =====")
+            assert credentials is not None
 
             user = await conn.fetchrow(
                 """
@@ -74,8 +71,18 @@ class GitAuth(HTTPBasic):
             if not user or not bcrypt.checkpw(credentials.password.encode(), user["password"]):
                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
-        return repo
+        return (None, repo)
 
 
 _git_auth = GitAuth()
-git_auth = Annotated[dict, Depends(_git_auth)]
+git_auth = Annotated[Tuple[User, Repository], Depends(_git_auth)]
+
+
+def form_get(form: FormData, key: str) -> str | None:
+    val = form.get(key)
+    if isinstance(val, UploadFile):
+        raise HTTPException(
+            detail=f"The {key} field cannot be a file",
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+        )
+    return val

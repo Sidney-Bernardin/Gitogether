@@ -13,7 +13,6 @@ CREATE TABLE repositories (
     stars int NOT NULL,
 
     fork_of uuid REFERENCES repositories(repository_id),
-
     owner_id uuid REFERENCES users(user_id)
 );
 

@@ -1,29 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Gitogether{% endblock %}</title>
-    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-    <style>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{% block title %}Gitogether{% endblock %}</title>
+
+        <script src="{{ url_for("static", path="htmx.min.js") }}"></script>
+        <script src="{{ url_for("static", path="main.js") }}" defer></script>
+
+        <link rel="stylesheet" href="{{ url_for("static", path="layout.css") }}">
+
+        <style>
         form {
             display: flex;
             flex-direction: column;
             width: fit-content;
         }
-    </style>
-</head>
-<body>
-    <nav>
-        <a href="/">Home</a>
-        {% if session %}
+        </style>
+    </head>
+    <body>
+        <nav>
+            <a href="/">Home</a>
+            {% if session %}
             <a href="{{ url_for("user", username=session.username) }}">{{ session.username }}</a>
-            <button hx-get="/signout">Sign Out</button>
-        {% else %}
-            <a href="/signin">Sign In</a>
-            <a href="/signup">Sign Up</a>
-        {% endif %}
-    </nav>
-    {% block content %}{% endblock %}
-</body>
+                <button hx-get="/signout">Sign Out</button>
+            {% else %}
+                <a href="/signin">Sign In</a>
+                <a href="/signup">Sign Up</a>
+            {% endif %}
+        </nav>
+        <div class="content">
+            {% block content %}{% endblock %}
+        </div>
+    </body>
 </html>
