@@ -3,19 +3,21 @@
 {% block title %}{{ repo.name }}{% endblock %}
 
 {% block content %}
-{% if tree %}
+<h1><a href="{{ url_for("user", username=username) }}">{{ username }}</a> / {{ repo.name }}</h1>
+
+{% if err == "REPOTITORY_EMPTY" %}
+    This repository has no commits.
+{% elif err == "REPOSITORY_FILE_NOT_FOUND" %}
+    File not found.
+{% elif file.type_str == "tree" %}
     <ul>
-        {% for file in tree %}
-            <a href="{{ url_for('repository', username=username, repo_name=repo.name, commit=commit, path=(f"{path}/" if path else "") + file.name) }}">
-                {{ file.name }}
+        {% for f in file %}
+            <a href="{{ url_for("repository", username=username, repo_name=repo.name, commit=commit, path=sufix_path+f.name) }}">
+                {{ f.name }}
             </a>
         {% endfor %}
     </ul>
-{% elif blob %}
+{% elif file.type_str == "blob" %}
     {{ blob }}
-{% elif not_found %}
-    Not Found
-{% elif not commit %}
-    no commits
 {% endif %}
 {% endblock %}

@@ -5,23 +5,27 @@ from fastapi import APIRouter, HTTPException, Request, Response, status
 from fastapi.responses import StreamingResponse
 
 from app.config import Config
-from app.dependencies import SessionAuth, git_auth, templates
-from app.domain import RepositoryForm, create_repository
+from app.dependencies import SessionAuth, form_get, git_auth, templates
+from app.domain import create_repository
 
 router = APIRouter()
 
 
 @router.post("/repositories")
-async def create_repo(req: Request, user: SessionAuth, form: RepositoryForm):
+async def create_repo(req: Request, user: SessionAuth):
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
-    repo = await create_repository(user, form)
+    f = await req.form()
+    name = form_get(f, "name") or ""
+    public = form_get(f, "public") or ""
+
+    repo = await create_repository(user, name, public)
 
     return templates.TemplateResponse(
+        req,
         "repository.html",
         context={
-            "request": req,
             "view": "list-item",
             "username": user.username,
             "repo": repo,

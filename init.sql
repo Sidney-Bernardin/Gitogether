@@ -9,7 +9,7 @@ CREATE TABLE repositories (
     repository_id uuid PRIMARY KEY,
 
     name text NOT NULL,
-    public boolean,
+    public boolean NOT NULL,
     stars int NOT NULL,
 
     fork_of uuid REFERENCES repositories(repository_id),

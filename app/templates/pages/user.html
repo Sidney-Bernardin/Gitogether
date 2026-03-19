@@ -8,8 +8,8 @@
 {% if is_owner %}
 <h2>Create Repository</h2>
 <form hx-post="/repositories" hx-target="#repositories" hx-swap="beforeend">
-    <label for="repo_name">Name</label>
-    <input type="text" name="repo_name" placeholder="Repository Name">
+    <label for="name">Name</label>
+    <input type="text" name="name" placeholder="Repository Name">
 
     <label for="public">Public</label>
     <input type="checkbox" name="public">
@@ -17,9 +17,10 @@
 </form>
 {% endif %}
 
+{% if user %}
 <h2>Repositories</h2>
 <ul id="repositories">
-    {% for repo in repositories %}
+    {% for repo in repos %}
         <li>
             <a href="{{ url_for('repository', username=user.username, repo_name=repo.name) }}">{{ repo.name }}</a>
             {% if is_owner and not repo.public %}
@@ -33,7 +34,7 @@
 
 <h2>Other Repositories</h2>
 <ul>
-    {% for repo in other_repositories %}
+    {% for repo in contributed_repos %}
         <li>
             <a href="{{ url_for('repository', username=user.username, repo_name=repo.name) }}">{{ repo.name }}</a>
             {% if is_owner and not repo.public %}
@@ -44,4 +45,7 @@
         <li>No repositories</li>
     {% endfor %}
 </ul>
+{% else %}
+User not found.
+{% endif %}
 {% endblock %}

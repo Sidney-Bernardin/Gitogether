@@ -1,10 +1,7 @@
-import pygit2
-from typing import Any, List
-
 from fastapi import APIRouter, Request
 
-from app.domain.errors import DomainError
-from app.domain import Repository, get_repository, get_repository_file
+from app.domain.errors import DomainError, DomainErrorType
+from app.domain import get_user_by_username, get_repository, get_repositories, get_repository_file
 from app.dependencies import SessionAuth, templates
 
 router = APIRouter()
@@ -33,97 +30,45 @@ def signin_page(req: Request):
 
 @router.get("/{username}", name="user")
 async def user(req: Request, session: SessionAuth, username: str):
-    repositories: List[Any] | None = None
-    other_repositories: List[Any] | None = None
+    ctx = {
+        "session": session,
+        "user": None,
+        "repos": None,
+        "contributed_repos": None,
+        "is_owner": session and session.username == username,
+    }
 
-    # async with acquire() as conn:
-    #     conn: asyncpg.Connection
-    #
-    #     user = await conn.fetchrow(
-    #         """SELECT user_id, username FROM users WHERE username = $1""",
-    #         username,
-    #     )
-    #
-    #     if not user:
-    #         return templates.TemplateResponse("pages/user.html", {"request": req, "user": None})
-    #
-    #     is_owner = session and session.get("username") == username
-    #     if is_owner:
-    #         repositories = await conn.fetch(
-    #             """
-    #             SELECT repository_id, name, public, fork_of, owner_id
-    #             FROM repositories
-    #             WHERE owner_id = $1
-    #             """,
-    #             user["user_id"],
-    #         )
-    #         other_repositories = await conn.fetch(
-    #             """
-    #             SELECT repository_id, name, public, fork_of, owner_id
-    #             FROM repositories
-    #             WHERE EXISTS (
-    #                 SELECT FROM repository_contributors
-    #                 WHERE user_id = $1
-    #             )
-    #             """,
-    #             user["user_id"],
-    #         )
-    #     else:
-    #         repositories = await conn.fetch(
-    #             """
-    #             SELECT repository_id, name, public, fork_of, owner_id
-    #             FROM repositories
-    #             WHERE owner_id = $1 AND public
-    #             """,
-    #             user["user_id"],
-    #         )
-    #         other_repositories = await conn.fetch(
-    #             """
-    #             SELECT repository_id, name, public, fork_of, owner_id
-    #             FROM repositories
-    #             WHERE EXISTS (
-    #                 SELECT FROM repository_contributors
-    #                 WHERE user_id = $1 AND public
-    #             )
-    #             """,
-    #             user["user_id"],
-    #         )
-    #
-    # return templates.TemplateResponse(
-    #     "pages/user.html",
-    #     {
-    #         "request": req,
-    #         "session": session,
-    #         "user": user,
-    #         "repositories": repositories,
-    #         "other_repositories": other_repositories,
-    #         "is_owner": is_owner,
-    #     },
-    # )
+    try:
+        ctx["user"] = await get_user_by_username(username)
+        ctx["repos"], ctx["contributed_repos"] = await get_repositories(session, ctx["user"])
+    except DomainError as err:
+        pass
+
+    return templates.TemplateResponse(req, "pages/user.html", ctx)
 
 
 @router.get("/{username}/{repo_name}", name="repository")
 @router.get("/{username}/{repo_name}/{commit}", name="repository")
 @router.get("/{username}/{repo_name}/{commit}/{path:path}", name="repository")
 async def get_repo(req: Request, user: SessionAuth, username: str, repo_name: str, commit: str | None = None, path: str = ""):
-    repo: Repository | None = None
-    file: pygit2.Object | None = None
+    ctx = {
+        "user": user,
+        "username": username,
+        "commit": commit,
+        "sufix_path": f"{path}/" if path else "",
+        "repo": None,
+        "file": None,
+        "err": None,
+    }
 
     try:
-        repo = await get_repository(username, repo_name)
-        file = get_repository_file(username, repo_name, commit=commit, path=path)
-    except DomainError:
-        pass
+        ctx["repo"] = await get_repository(username, repo_name)
+        ctx["file"] = get_repository_file(username, repo_name, commit=commit, path=path)
+    except DomainError as err:
+        match err.type:
+            case DomainErrorType.REPOSITORY_EMPTY | DomainErrorType.REPOSITORY_FILE_NOT_FOUND:
+                ctx["err"] = err.type.name
+            case _:
+                raise
 
-    return templates.TemplateResponse(
-        req,
-        "pages/repository.html",
-        context={
-            "user": user,
-            "username": username,
-            "commit": commit,
-            "path": path,
-            "repo": repo,
-            "file": file,
-        },
-    )
+    return templates.TemplateResponse(req, "pages/repository.html", ctx)

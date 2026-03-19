@@ -1,9 +1,11 @@
+from typing import Tuple
 import uuid
 import pygit2
 from pydantic import BaseModel
 from asyncpg.connection import asyncpg
 
 from app.config import Config
+from app.postgres import acquire
 from app.domain.errors import DomainErrorType
 from app.postgres import acquire
 from app.domain import DomainError, User
@@ -20,16 +22,11 @@ class Repository(BaseModel):
     fork_of: uuid.UUID | None
 
 
-class RepositoryForm(BaseModel):
-    name: str
-    public: bool
-
-
-async def create_repository(user: User, form: RepositoryForm) -> Repository:
+async def create_repository(user: User, name: str, public: str) -> Repository:
     repo = Repository(
         repository_id=uuid.uuid4(),
-        name=form.name,
-        public=form.public,
+        name=name,
+        public=public == "true" or public == "yes" or public == "on",
         stars=0,
         owner_id=user.user_id,
         fork_of=None,
@@ -42,19 +39,19 @@ async def create_repository(user: User, form: RepositoryForm) -> Repository:
             # Check if the name is taken.
             if await conn.fetchrow(
                 """
-                SELECT FROM repositories
-                WHERE owner_id = $4 AND name = $2
+                SELECT 1 FROM repositories
+                WHERE owner_id = $1 AND name = $2
                 """,
                 repo.owner_id,
                 repo.name,
             ):
-                raise DomainError(DomainErrorType.REPOSITORY_NAME_TAKEN, "Repository name already in use.")
+                raise DomainError(DomainErrorType.REPOSITORY_NAME_TAKEN, "repository name already in use")
 
             # Insert the repo.
             await conn.fetchrow(
                 """
                 INSERT INTO repositories (repository_id, name, public, stars, owner_id)
-                VALUES $1, $2, $3, 0, $4
+                VALUES ($1, $2, $3, 0, $4)
                 """,
                 repo.repository_id,
                 repo.name,
@@ -81,13 +78,13 @@ async def get_repository(username: str, repo_name: str) -> Repository:
         repo = await conn.fetchrow(
             """
             SELECT
-                r.repository_id, r.name, r.stars, r.fork_of, r.public
+                r.repository_id, r.name, r.stars, r.fork_of, r.public, r.owner_id,
                 u.user_id, u.username
             FROM repositories r
             LEFT JOIN users u
                 ON u.user_id = r.owner_id
             WHERE
-                u.username = $1
+                u.username = $1 AND
                 r.name = $2
             """,
             username,
@@ -95,9 +92,46 @@ async def get_repository(username: str, repo_name: str) -> Repository:
         )
 
     if not repo:
-        raise DomainError(DomainErrorType.REPOSITORY_NOT_FOUND, "Cannot file that repository.")
+        raise DomainError(DomainErrorType.REPOSITORY_NOT_FOUND, "cannot file that repository")
 
     return Repository.model_validate(dict(repo), extra="ignore")  # <- mabey remove ignore?
+
+
+async def get_repositories(session: User | None, user: User) -> Tuple[list[Repository], list[Repository]]:
+    async with acquire() as conn:
+        conn: asyncpg.Connection
+
+        repos = await conn.fetch(
+            """
+            SELECT repository_id, name, public, stars, fork_of, owner_id
+            FROM repositories
+            WHERE
+                owner_id = $1 AND
+                public = COALESCE($2, public)
+            """,
+            user.user_id,
+            None if session and session.username == user.username else True,
+        )
+
+        contributed_repos = await conn.fetch(
+            """
+            SELECT repository_id, name, public, stars, fork_of, owner_id
+            FROM repositories
+            WHERE EXISTS (
+                SELECT FROM repository_contributors
+                WHERE
+                    user_id = $1 AND
+                    public = COALESCE($2, public)
+            )
+            """,
+            user.user_id,
+            None if session and session.username == user.username else True,
+        )
+
+    return (
+        [Repository.model_validate(dict(repo)) for repo in repos],
+        [Repository.model_validate(dict(repo)) for repo in contributed_repos],
+    )
 
 
 def get_repository_file(username: str, repo_name: str, commit: str | None, path: str = "") -> pygit2.Object:
@@ -105,7 +139,6 @@ def get_repository_file(username: str, repo_name: str, commit: str | None, path:
         repo = pygit2.Repository(Config.repositories_path / username / repo_name)
         commitID = commit or repo.head.target
         return repo.revparse_single(f"{commitID}:{path}")
-
     except pygit2.GitError as err:
         if (msg := err.args[0]) and msg.startswith("reference 'refs/heads/") and msg.endswith("' not found"):
             raise DomainError(DomainErrorType.REPOSITORY_EMPTY, "This repository desn't have any commits.")

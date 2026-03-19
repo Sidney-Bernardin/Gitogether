@@ -11,6 +11,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.datastructures import FormData
 from starlette.datastructures import UploadFile
 
+from app.postgres import acquire
 from app.config import Config
 from app.domain import User
 
@@ -34,7 +35,7 @@ SessionAuth = Annotated[User | None, Depends(session_auth)]
 
 class GitAuth(HTTPBasic):
     async def __call__(self, req: Request, username: str, repo_name: str, service: str) -> Tuple[User | None, Repository]:
-        async with req.app.state.pg.acquire() as conn:
+        async with acquire() as conn:
             conn: asyncpg.Connection
 
             repo = await conn.fetchrow(

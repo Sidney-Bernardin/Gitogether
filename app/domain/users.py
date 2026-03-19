@@ -54,8 +54,33 @@ async def signin_user(username: str, password: str) -> User:
     async with acquire() as conn:
         conn: Connection
 
-        user = await conn.fetchrow("""SELECT user_id, username, password FROM users WHERE username = $1""", username)
+        user = await conn.fetchrow(
+            """
+            SELECT user_id, username, password
+            FROM users WHERE username = $1
+            """,
+            username,
+        )
+
         if not user or not bcrypt.checkpw(password.encode(), user["password"]):
             raise DomainError(DomainErrorType.USERNAME_OR_PASSWORD_INVALID, "invalid username or password")
+
+    return User.model_validate(dict(user), extra="ignore")
+
+
+async def get_user_by_username(username: str) -> User:
+    async with acquire() as conn:
+        conn: Connection
+
+        user = await conn.fetchrow(
+            """
+            SELECT user_id, username
+            FROM users WHERE username = $1
+            """,
+            username,
+        )
+
+        if not user:
+            raise DomainError(DomainErrorType.USER_NOT_FOUND, "invalid username or password")
 
     return User.model_validate(dict(user), extra="ignore")
