@@ -14,6 +14,9 @@ class DomainErrorType(Enum):
     REPOSITORY_FILE_NOT_FOUND = 8
     REPOSITORY_EMPTY = 9
 
+    CANNOT_FORK_OWN_REPO = 10
+    CANNOT_FORK_PRIVATE_REPO = 11
+
 
 class DomainError(Exception):
     def __init__(self, type: DomainErrorType, msg: str) -> None:

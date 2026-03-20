@@ -5,6 +5,13 @@
 {% block content %}
 <h1><a href="{{ url_for("user", username=username) }}">{{ username }}</a> / {{ repo.name }}</h1>
 
+{% if user and user.username != username %}
+<form hx-patch="{{ url_for("create_repository_fork", repository_id=repo.repository_id) }}" hx-swap="none">
+    <input type="text" name="name" value="{{ repo.name }}">
+    <button type="submit">Fork</button>
+</form>
+{% endif %}
+
 {% if err == "REPOTITORY_EMPTY" %}
     This repository has no commits.
 {% elif err == "REPOSITORY_FILE_NOT_FOUND" %}

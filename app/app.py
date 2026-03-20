@@ -4,7 +4,7 @@ from fastapi import FastAPI, Request, Response, status
 from fastapi.staticfiles import StaticFiles
 
 from app import postgres
-from app.routes import pages, login, repositories
+from app.routes import pages, login, repositories, git_rpc
 from app.domain.errors import *
 
 
@@ -18,6 +18,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 app.include_router(login.router)
+app.include_router(git_rpc.router)
 app.include_router(repositories.router)
 app.include_router(pages.router)
 

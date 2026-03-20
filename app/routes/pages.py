@@ -1,8 +1,18 @@
+import asyncpg
+import pygit2
+
+import pydantic
+from pydantic.dataclasses import dataclass
+from dataclasses import asdict
+
 from fastapi import APIRouter, Request
 
-from app.domain.errors import DomainError, DomainErrorType
-from app.domain import get_user_by_username, get_repository, get_repositories, get_repository_file
-from app.dependencies import SessionAuth, templates
+import app.domain as domain
+from app.domain.errors import DomainError
+from app.domain import get_user_by_username, get_repositories
+from app.dependencies import Config, SessionAuth, templates
+from app.domain.users import User
+from app.postgres import acquire
 
 router = APIRouter()
 
@@ -47,28 +57,57 @@ async def user(req: Request, session: SessionAuth, username: str):
     return templates.TemplateResponse(req, "pages/user.html", ctx)
 
 
+@dataclass(config=pydantic.ConfigDict(arbitrary_types_allowed=True))
+class GetRepoContext:
+    user: User | None
+    username: str
+    file_path_sufix: str
+    repo: asyncpg.Record | None = None
+    commit_id: str | None = None
+    file: pygit2.Object | None = None
+
+
 @router.get("/{username}/{repo_name}", name="repository")
-@router.get("/{username}/{repo_name}/{commit}", name="repository")
-@router.get("/{username}/{repo_name}/{commit}/{path:path}", name="repository")
-async def get_repo(req: Request, user: SessionAuth, username: str, repo_name: str, commit: str | None = None, path: str = ""):
-    ctx = {
-        "user": user,
-        "username": username,
-        "commit": commit,
-        "sufix_path": f"{path}/" if path else "",
-        "repo": None,
-        "file": None,
-        "err": None,
-    }
+@router.get("/{username}/{repo_name}/{commit_id}", name="repository")
+@router.get("/{username}/{repo_name}/{commit_id}/{path:path}", name="repository")
+async def get_repo(req: Request, user: SessionAuth, username: str, repo_name: str, commit_id: str = "", path: str = ""):
+    ctx = GetRepoContext(
+        user,
+        username,
+        file_path_sufix=f"{path}/" if path else "",
+    )
 
     try:
-        ctx["repo"] = await get_repository(username, repo_name)
-        ctx["file"] = get_repository_file(username, repo_name, commit=commit, path=path)
-    except DomainError as err:
-        match err.type:
-            case DomainErrorType.REPOSITORY_EMPTY | DomainErrorType.REPOSITORY_FILE_NOT_FOUND:
-                ctx["err"] = err.type.name
-            case _:
-                raise
+        async with acquire() as conn:
+            conn: asyncpg.Connection
 
-    return templates.TemplateResponse(req, "pages/repository.html", ctx)
+            # Sect the repository.
+            ctx.repo = await conn.fetchrow(
+                """
+                SELECT r.repository_id, r.name, r.stars, r.fork_of, r.public, r.owner_id, u.user_id, u.username
+                FROM repositories r
+                LEFT JOIN users u ON u.user_id = r.owner_id
+                WHERE u.username = $1 AND r.name = $2
+                """,
+                username,
+                repo_name,
+            )
+
+            if not ctx.repo:
+                raise KeyError
+
+            # Get the file from the repository.
+            repo_svc = pygit2.Repository(Config.repositories_path / username / repo_name)
+            ctx.commit_id = commit_id or repo_svc.head.shorthand
+            ctx.file = repo_svc.revparse_single(f"{ctx.commit_id}:{path}")
+
+    except pygit2.GitError as err:
+        if (msg := err.args[0]) and msg.startswith("reference 'refs/heads/") and msg.endswith("' not found"):
+            pass
+        else:
+            raise err
+
+    except KeyError:
+        pass
+
+    return templates.TemplateResponse(req, "pages/repository.html", asdict(ctx))

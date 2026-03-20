@@ -3,17 +3,18 @@ import jwt
 import bcrypt
 import asyncpg
 from typing import Annotated, Tuple
-from pygit2 import Repository
 
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPBasic
 from fastapi.templating import Jinja2Templates
 from fastapi.datastructures import FormData
+import pygit2
 from starlette.datastructures import UploadFile
 
+from app.domain.errors import DomainError, DomainErrorType
 from app.postgres import acquire
 from app.config import Config
-from app.domain import User
+from app.domain import User, Repository
 
 templates = Jinja2Templates(os.path.join(os.path.dirname(__file__), "templates"))
 
@@ -87,3 +88,12 @@ def form_get(form: FormData, key: str) -> str | None:
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
         )
     return val
+
+
+def repo_head(repo_svc: pygit2.Repository) -> pygit2.Reference:
+    try:
+        return repo_svc.head
+    except pygit2.GitError as err:
+        if (msg := err.args[0]) and msg.startswith("reference 'refs/heads/") and msg.endswith("' not found"):
+            raise DomainError(DomainErrorType.REPOSITORY_EMPTY, "This repository desn't have any commits.")
+        raise err
