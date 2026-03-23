@@ -2,7 +2,7 @@ import os
 import jwt
 import bcrypt
 import asyncpg
-from typing import Annotated, Tuple
+from typing import Annotated, Literal, Tuple, overload
 
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPBasic
@@ -19,7 +19,7 @@ from app.domain import User, Repository
 templates = Jinja2Templates(os.path.join(os.path.dirname(__file__), "templates"))
 
 
-def session_auth(req: Request):
+def session_auth(req: Request) -> User | None:
     try:
         session = jwt.decode(req.cookies["session"], Config.jwt_secret, algorithms=["HS256"])
         return User.model_validate(session, extra="ignore")
@@ -90,10 +90,5 @@ def form_get(form: FormData, key: str) -> str | None:
     return val
 
 
-def repo_head(repo_svc: pygit2.Repository) -> pygit2.Reference:
-    try:
-        return repo_svc.head
-    except pygit2.GitError as err:
-        if (msg := err.args[0]) and msg.startswith("reference 'refs/heads/") and msg.endswith("' not found"):
-            raise DomainError(DomainErrorType.REPOSITORY_EMPTY, "This repository desn't have any commits.")
-        raise err
+def str_to_bool(s: str) -> bool:
+    return s == "true" or s == "on" or s == "yes"

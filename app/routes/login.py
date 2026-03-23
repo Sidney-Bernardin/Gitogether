@@ -1,41 +1,44 @@
+from fastapi.exceptions import RequestValidationError
 import jwt
+from typing import Annotated
+from pydantic import BaseModel, Field, ValidationError
 from datetime import datetime, timezone, timedelta
-from fastapi import APIRouter, Request, Response
+from fastapi import APIRouter, Form, Request, Response
+from pydantic_core import PydanticCustomError
 
-from app.dependencies import form_get
 from app.domain import User, signup_user, signin_user
 from app.config import Config
 
 router = APIRouter()
 
 
-@router.get("/signout")
-def signout(res: Response):
-    res.delete_cookie("session", path="/")
-    res.headers["HX-Redirect"] = "/"
+class SignupForm(BaseModel):
+    username: str = Field(min_length=3, max_length=50)
+    password: str = Field(min_length=6, max_length=50)
 
 
 @router.post("/signup")
-async def signup(req: Request, res: Response):
-
-    f = await req.form()
-    username = form_get(f, "username") or ""
-    password = form_get(f, "password") or ""
-
-    user = await signup_user(username, password)
+async def signup(res: Response, form: Annotated[SignupForm, Form()]):
+    user = await signup_user(form.username, form.password)
     set_new_session(res, user)
     res.headers["HX-Redirect"] = "/"
 
 
+class SigninForm(BaseModel):
+    username: str = Field(min_length=3, max_length=50)
+    password: str = Field(min_length=6, max_length=50)
+
+
 @router.post("/signin")
-async def signin(req: Request, res: Response):
-
-    f = await req.form()
-    username = form_get(f, "username") or ""
-    password = form_get(f, "password") or ""
-
-    user = await signin_user(username, password)
+async def signin(req: Request, res: Response, form: Annotated[SigninForm, Form()]):
+    user = await signin_user(form.username, form.password)
     set_new_session(res, user)
+    res.headers["HX-Redirect"] = "/"
+
+
+@router.get("/signout")
+def signout(res: Response):
+    res.delete_cookie("session", path="/")
     res.headers["HX-Redirect"] = "/"
 
 

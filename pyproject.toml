@@ -1,0 +1,3 @@
+[tool.jinja-lsp]
+templates = "./app/templates"
+backend = ["./app"]

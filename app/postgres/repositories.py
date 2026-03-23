@@ -18,6 +18,30 @@ class RepositoryPage:
     username: str
 
 
+async def insert_repository(
+    c: Connection,
+    repository_id: UUID,
+    name: str,
+    stars: int,
+    public: bool,
+    owner_id: UUID,
+    fork_of: UUID | None,
+):
+    return await c.execute(
+        """
+        INSERT INTO repositories
+            (repository_id, name, public, stars, owner_id, fork_of)
+        VALUES ($1, $2, $3, $4, $5)
+        """,
+        repository_id,
+        name,
+        public,
+        stars,
+        owner_id,
+        fork_of,
+    )
+
+
 async def select_repository_page(c: Connection, username: str, repo_name: str):
     return await fetchrow(
         c,

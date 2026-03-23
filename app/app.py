@@ -1,10 +1,14 @@
 from contextlib import asynccontextmanager
 
+from pydantic import ValidationError
+
 from fastapi import FastAPI, Request, Response, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.staticfiles import StaticFiles
 
 from app import postgres
 from app.routes import pages, login, repositories, git_rpc
+from app.dependencies import templates
 from app.domain.errors import *
 
 
@@ -17,10 +21,15 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
+app.include_router(pages.router)
 app.include_router(login.router)
 app.include_router(git_rpc.router)
-app.include_router(repositories.router)
-app.include_router(pages.router)
+app.include_router(repositories.router, prefix="/gitogether")
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error_handler(req: Request, err: RequestValidationError):
+    return templates.TemplateResponse(req, "form_validation_error.html.jinja", {"errors": err.errors()})
 
 
 @app.exception_handler(DomainError)

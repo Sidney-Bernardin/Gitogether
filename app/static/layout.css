@@ -1,22 +1,31 @@
 * {
-    margin: 0;
-    padding: 0;
+  margin: 0;
+  padding: 0;
 }
 
 body {
-    width: 100%;
-    height: 100vh;
+  width: 100%;
+  height: 100vh;
 }
 
 nav {
-    position: fixed;
-    display: flex;
-    top: 0;
-    width: 100%;
-    justify-content: center;
-    align-items: center;
+  position: fixed;
+  display: flex;
+  top: 0;
+  width: 100%;
+  justify-content: center;
+  align-items: center;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+}
+
+form .err {
+  color: red;
 }
 
 .content {
-    padding-top: 2rem;
+  padding-top: 2rem;
 }

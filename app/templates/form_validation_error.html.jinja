@@ -1,0 +1,13 @@
+{% for err in errors %}
+    {% set selector = "#{}".format(request.headers.get("HX-Trigger")) %}
+
+    {% if err.loc %}
+        {% set selector = "{} input[name='{}']".format(selector, err.loc[-1]) %}
+    {% else %}
+        {% set selector = selector ~ " input[type=submit]" %}
+    {% endif %}
+
+    <div hx-swap-oob="afterend:{{selector}}">
+        <p class="err">{{ err }}</p>
+    </div>
+{% endfor %}

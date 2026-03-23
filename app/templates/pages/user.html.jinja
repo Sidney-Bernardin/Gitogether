@@ -1,4 +1,4 @@
-{% extends "pages/layout.html" %}
+{% extends "pages/layout.html.jinja" %}
 
 {% block title %}{{ user.username }}{% endblock %}
 
@@ -8,8 +8,8 @@
 {% if is_owner %}
 <h2>Create Repository</h2>
 <form hx-post="/repositories" hx-target="#repositories" hx-swap="beforeend">
-    <label for="name">Name</label>
-    <input type="text" name="name" placeholder="Repository Name">
+    <label for="reponame">Name</label>
+    <input type="text" name="reponame" placeholder="Name">
 
     <label for="public">Public</label>
     <input type="checkbox" name="public">
