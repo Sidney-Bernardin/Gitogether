@@ -3,7 +3,7 @@
 {% block title %}{{ repo.name }}{% endblock %}
 
 {% block content %}
-<h1><a href="{{ url_for("user", username=username) }}">{{ username }}</a> / {{ repo.name }}</h1>
+<h1><a href="{{ url_for("user_page", username=username) }}">{{ username }}</a> / {{ repo.name }}</h1>
 
 {% if user and user.username != username %}
 <form hx-patch="{{ url_for("create_repository_fork", repository_id=repo.repository_id) }}" hx-swap="none">
@@ -21,7 +21,7 @@
 {% elif file.type_str == "tree" %}
     <ul>
         {% for f in file %}
-            <a href="{{ url_for("repository", username=username, repo_name=repo.name, commit_id=commit_id, path=file_path_sufix~f.name) }}">
+            <a href="{{ url_for("repository_page", username=username, repo_name=repo.name, commit_id=commit_id, path=file_path_sufix~f.name) }}">
                 {{ f.name }}
             </a>
         {% endfor %}

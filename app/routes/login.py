@@ -1,12 +1,15 @@
+import uuid
+import asyncpg
+import bcrypt
 from fastapi.exceptions import RequestValidationError
 import jwt
 from typing import Annotated
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field
 from datetime import datetime, timezone, timedelta
-from fastapi import APIRouter, Form, Request, Response
+from fastapi import APIRouter, Form, Response
 from pydantic_core import PydanticCustomError
 
-from app.domain import User, signup_user, signin_user
+import app.postgres as pg
 from app.config import Config
 
 router = APIRouter()
@@ -19,7 +22,20 @@ class SignupForm(BaseModel):
 
 @router.post("/signup")
 async def signup(res: Response, form: Annotated[SignupForm, Form()]):
-    user = await signup_user(form.username, form.password)
+    async with pg.acquire() as conn:
+        conn: asyncpg.Connection
+
+        if await pg.User.select_exists(conn, form.username):
+            raise RequestValidationError([PydanticCustomError("username_taken", "Username taken.")])
+
+        user = pg.User(
+            user_id=uuid.uuid4(),
+            username=form.username,
+            password=bcrypt.hashpw(form.password.encode(), bcrypt.gensalt()),
+        )
+
+        await user.insert(conn)
+
     set_new_session(res, user)
     res.headers["HX-Redirect"] = "/"
 
@@ -30,8 +46,20 @@ class SigninForm(BaseModel):
 
 
 @router.post("/signin")
-async def signin(req: Request, res: Response, form: Annotated[SigninForm, Form()]):
-    user = await signin_user(form.username, form.password)
+async def signin(res: Response, form: Annotated[SigninForm, Form()]):
+    async with pg.acquire() as conn:
+        conn: asyncpg.Connection
+
+        user = await pg.User.select_by_username(conn, form.username)
+        if not user or not bcrypt.checkpw(form.password.encode(), user.password):
+            raise RequestValidationError(
+                [
+                    PydanticCustomError(
+                        "invalid_username_or_password", "Invalid username or password."
+                    )
+                ]
+            )
+
     set_new_session(res, user)
     res.headers["HX-Redirect"] = "/"
 
@@ -42,15 +70,20 @@ def signout(res: Response):
     res.headers["HX-Redirect"] = "/"
 
 
-def set_new_session(res: Response, user: User):
-    session = jwt.encode(
-        {
-            "sub": str(user.user_id),
-            "exp": datetime.now(timezone.utc) + timedelta(hours=Config.session_expiry_hours),
-            "user_id": str(user.user_id),
-            "username": user.username,
-        },
-        Config.jwt_secret,
-        algorithm="HS256",
+def set_new_session(res: Response, user: pg.User):
+    res.set_cookie(
+        "session",
+        httponly=True,
+        samesite="lax",
+        path="/",
+        value=jwt.encode(
+            key=Config.jwt_secret,
+            algorithm="HS256",
+            payload={
+                "sub": str(user.user_id),
+                "exp": datetime.now(timezone.utc) + timedelta(hours=Config.session_expiry_hours),
+                "user_id": str(user.user_id),
+                "username": user.username,
+            },
+        ),
     )
-    res.set_cookie("session", session, httponly=True, samesite="lax", path="/")

@@ -1,6 +1,6 @@
 {% macro repository(view, repo, is_owner) %}
     <li>
-        <a href="{{ url_for('repository', username=username, repo_name=repo.name) }}">
+        <a href="{{ url_for('repository_page', username=username, repo_name=repo.name) }}">
             {{ repo.name }}
         </a>
         {% if is_owner and not repo.public %}

@@ -22,7 +22,7 @@
 <ul id="repositories">
     {% for repo in repos %}
         <li>
-            <a href="{{ url_for('repository', username=user.username, repo_name=repo.name) }}">{{ repo.name }}</a>
+            <a href="{{ url_for('repository_page', username=user.username, repo_name=repo.name) }}">{{ repo.name }}</a>
             {% if is_owner and not repo.public %}
                 <span>(private)</span>
             {% endif %}
@@ -36,7 +36,7 @@
 <ul>
     {% for repo in contributed_repos %}
         <li>
-            <a href="{{ url_for('repository', username=user.username, repo_name=repo.name) }}">{{ repo.name }}</a>
+            <a href="{{ url_for('repository_page', username=user.username, repo_name=repo.name) }}">{{ repo.name }}</a>
             {% if is_owner and not repo.public %}
                 <span>(private)</span>
             {% endif %}

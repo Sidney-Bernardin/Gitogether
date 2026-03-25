@@ -1,13 +1,14 @@
 from typing import Annotated
-import uuid
-import asyncpg
-import pygit2
 from pydantic import BaseModel, Field
-from fastapi import APIRouter, Form, HTTPException, Request, Response, status
+from uuid import uuid4
 
-import app.postgres as pg
+from asyncpg import Connection
+import pygit2
+
+from fastapi import APIRouter, Form, HTTPException, Request, status
+
+from app.postgres import Repository, RepositoryPageView, acquire
 from app.dependencies import Config, SessionAuth, templates
-from app.domain.repositories import fork_repository
 
 router = APIRouter(prefix="/repositories")
 
@@ -18,63 +19,57 @@ class CreateReposiotryForm(BaseModel):
 
 
 @router.post("/")
-async def create_repo(req: Request, user: SessionAuth, form: Annotated[CreateReposiotryForm, Form()]):
-    if not user:
+async def create_repo(req: Request, session: SessionAuth, form: Annotated[CreateReposiotryForm, Form()]):
+    if not session:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
-    repository_id = uuid.uuid4()
-
-    async with pg.acquire() as conn:
-        conn: asyncpg.Connection
+    async with acquire() as conn:
+        conn: Connection
         async with conn.transaction():
 
-            # Insert the repo.
-            await pg.insert_repository(
-                conn,
-                repository_id=repository_id,
+            repo = Repository(
+                repository_id=uuid4(),
                 name=form.reponame,
                 stars=0,
                 public=form.public,
-                owner_id=user.user_id,
+                owner_id=session.user_id,
                 fork_of=None,
             )
+            await repo.insert(conn)
 
-            # Init the repo.
-            repo_path = Config.repositories_path / user.username / form.reponame
+            repo_path = Config.repositories_path / session.username / form.reponame
             pygit2.init_repository(
                 repo_path,
                 bare=True,
                 flags=pygit2.enums.RepositoryInitFlag.MKPATH | pygit2.enums.RepositoryInitFlag.NO_REINIT,
             )
 
-    repo = pg.RepositoryPage(
-        repository_id=uuid.uuid4(),
-        name=form.reponame,
-        public=form.public,
-        stars=0,
-        fork_of=None,
-        owner_id=user.user_id,
-        username=user.username,
-    )
-
     return templates.TemplateResponse(
         req,
         "repository_list_item.html",
         context={
-            "repo": repo,
             "is_owner": True,
+            "repo": RepositoryPageView(
+                repository_id=repo.repository_id,
+                name=repo.name,
+                public=repo.public,
+                stars=repo.stars,
+                fork_of=repo.fork_of,
+                owner_id=session.user_id,
+                username=session.username,
+            ),
         },
     )
 
 
-@router.patch("/{repository_id}/fork", name="create_repository_fork")
-async def create_fork(req: Request, res: Response, repository_id: str, user: SessionAuth):
-    if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
-
-    f = await req.form()
-    name = form_get_str(f, "name") or ""
-
-    repo = await fork_repository(user, repository_id, name)
-
-    res.headers["HX-Redirect"] = f"/{user.username}/{repo.name}"
+# @router.patch("/{repository_id}/fork", name="create_repository_fork")
+# async def create_fork(req: Request, res: Response, repository_id: str, user: SessionAuth):
+#     if not user:
+#         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+#
+#     f = await req.form()
+#     name = form_get_str(f, "name") or ""
+#
+#     repo = await fork_repository(user, repository_id, name)
+#
+#     res.headers["HX-Redirect"] = f"/{user.username}/{repo.name}"

@@ -139,7 +139,7 @@ async def fork_repository(user: User, repository_id: str, fork_name: str) -> Rep
             return repo
 
 
-async def select_repository(conn: asyncpg.Connection, username: str, repo_name: str) -> asyncpg.Record | None:
+async def select_repository(conn, username: str, repo_name: str) -> asyncpg.Record:
     return await conn.fetchrow(
         """
         SELECT

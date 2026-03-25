@@ -50,7 +50,7 @@ async def signup_user(username: str, password: str) -> User:
     return user
 
 
-async def signin_user(username: str, password: str) -> User:
+async def select_user_by_username(conn: Connection, username: str) -> User:
     async with acquire() as conn:
         conn: Connection
 

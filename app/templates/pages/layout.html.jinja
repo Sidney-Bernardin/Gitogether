@@ -22,7 +22,7 @@
         <nav>
             <a href="/">Home</a>
             {% if session %}
-            <a href="{{ url_for("user", username=session.username) }}">{{ session.username }}</a>
+            <a href="{{ url_for("user_page", username=session.username) }}">{{ session.username }}</a>
                 <button hx-get="/signout">Sign Out</button>
             {% else %}
                 <a href="/signin">Sign In</a>
