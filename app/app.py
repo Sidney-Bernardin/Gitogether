@@ -1,15 +1,12 @@
 from contextlib import asynccontextmanager
 
-from pydantic import ValidationError
-
-from fastapi import FastAPI, Request, Response, status
+from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.staticfiles import StaticFiles
 
 from app import postgres
 from app.routes import pages, login, repositories, git_rpc
 from app.dependencies import templates
-from app.domain.errors import *
 
 
 @asynccontextmanager
@@ -31,26 +28,4 @@ app.include_router(repositories.router, prefix="/gitogether")
 async def validation_error_handler(req: Request, err: RequestValidationError):
     return templates.TemplateResponse(
         req, "form_validation_error.html.jinja", context={"errors": err.errors()}
-    )
-
-
-@app.exception_handler(DomainError)
-async def service_error_handler(req: Request, err: DomainError):
-    status_code: int = -1
-
-    match err.type:
-        case DomainErrorType.USERNAME_OR_PASSWORD_INVALID:
-            status_code = status.HTTP_401_UNAUTHORIZED
-        case (
-            DomainErrorType.USER_NOT_FOUND
-            | DomainErrorType.REPOSITORY_NOT_FOUND
-            | DomainErrorType.REPOSITORY_FILE_NOT_FOUND
-        ):
-            status_code = status.HTTP_404_NOT_FOUND
-        case DomainErrorType.USERNAME_TAKEN | DomainErrorType.REPOSITORY_NAME_TAKEN:
-            status_code = status.HTTP_409_CONFLICT
-
-    return Response(
-        f"{err.args[0]}: {err.args[1]}",
-        status_code,
     )
