@@ -76,7 +76,7 @@ class GitAuth(HTTPBasic):
                 not user
                 or not bcrypt.checkpw(credentials.password.encode(), user.password)
                 or repo.owner_id != user.user_id
-                or not Repository.has_contributor(conn, repo.repository_id, user.user_id)
+                or not await Repository.has_contributor(conn, repo.repository_id, user.user_id)
             ):
                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 

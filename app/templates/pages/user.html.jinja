@@ -29,6 +29,9 @@
             {% if is_owner and repo.private %}
                 <span>(private)</span>
             {% endif %}
+            {% if repo.fork_id %}
+                <span>(fork)</span>
+            {% endif %}
         </li>
     {% else %}
         <li>No repositories</li>

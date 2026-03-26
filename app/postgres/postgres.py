@@ -22,6 +22,12 @@ def acquire():
 
 async def fetchrow(conn: Connection, view: type, query: str, *args):
     r = await conn.fetchrow(query, *args)
+    print(
+        "===================================================================================================="
+    )
+    print(query)
+    print(args)
+    print(r)
     return view(**dict(r)) if r else None
 
 

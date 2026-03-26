@@ -27,7 +27,7 @@ async def signup(res: Response, form: Annotated[SignupForm, Form()]):
     async with acquire() as conn:
         conn: Connection
 
-        if await User.select_exists(conn, form.username):
+        if await User.is_username_taken(conn, form.username):
             raise RequestValidationError([PydanticCustomError("username_taken", "Username taken.")])
 
         user = User(

@@ -95,9 +95,11 @@ async def get_repo(
                 return res()
 
             if res.repo.private and not (
-                session
-                and res.repo.owner_id == session.user_id
-                and Repository.has_contributor(conn, res.repo.repository_id, session.user_id)
+                not session
+                or res.repo.owner_id != session.user_id
+                or not await Repository.has_contributor(
+                    conn, res.repo.repository_id, session.user_id
+                )
             ):
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
 

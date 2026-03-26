@@ -5,6 +5,12 @@
 {% block content %}
 <h1><a href="{{ url_for("user_page", username=username) }}">{{ username }}</a> / {{ repo.reponame }}</h1>
 
+{% if repo.fork_id %}
+    <a href="{{ url_for('repository_page', username=repo.fork_owner_username, reponame=repo.fork_reponame) }}">
+        {{ repo.fork_owner_username }} / {{ repo.fork_reponame }}
+    </a>
+{% endif %}
+
 {% if session and session.username != username %}
 <form id="fork" hx-patch="{{ url_for("fork_repository", repository_id=repo.repository_id) }}" hx-swap="none">
     <input type="text" name="reponame" value="{{ repo.reponame }}">
@@ -13,11 +19,11 @@
 {% endif %}
 
 {% if not repo %}
-    Repo not found.
+    <p>Repo not found.</p>
 {% elif not commit_id %}
-    No commits.
+    <p>No commits.</p>
 {% elif not file %}
-    File not found.
+    <p>File not found.</p>
 {% elif file.type_str == "tree" %}
     <ul>
         {% for f in file %}

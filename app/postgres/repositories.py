@@ -48,18 +48,18 @@ class Repository:
         )
 
     @classmethod
-    async def select_exists_by_names(cls, c: Connection, username: str, reponame: str) -> bool:
+    async def is_names_taken(cls, c: Connection, username: str, reponame: str) -> bool:
         return (
             await c.fetchrow(
                 """
-            SELECT 1 FROM repositories
-            WHERE
-                reponame = $1 AND
-                EXISTS (
-                    SELECT 1 FROM users
-                    WHERE username = $2
-                )
-            """,
+                SELECT 1 FROM repositories
+                WHERE
+                    reponame = $1 AND
+                    EXISTS (
+                        SELECT 1 FROM users
+                        WHERE username = $2 AND user_id = repositories.owner_id
+                    )
+                """,
                 reponame,
                 username,
             )
@@ -74,8 +74,12 @@ class Repository:
             """
             SELECT repository_id, reponame, private, stars, fork_id, owner_id 
             FROM repositories r
-            LEFT JOIN users u ON u.user_id = r.owner_id
-            WHERE u.username = $1 AND r.reponame = $2
+            WHERE
+                r.reponame = $2 AND
+                EXISTS (
+                    SELECT 1 FROM users
+                    WHERE username = $1 AND user_id = r.owner_id
+                )
             """,
             username,
             reponame,
@@ -136,9 +140,11 @@ class RepositoryPageView:
     stars: int
 
     owner_id: UUID
-    username: str
+    owner_username: str
 
     fork_id: UUID | None
+    fork_reponame: str | None
+    fork_owner_username: str | None
 
     @classmethod
     async def select_by_id(cls, c: Connection, repository_id: UUID) -> Self | None:
@@ -147,10 +153,18 @@ class RepositoryPageView:
             cls,
             """
             SELECT
-                r.repository_id, r.reponame, r.stars, r.private, r.fork_id,
-                r.owner_id, u.username
+                r.repository_id, r.reponame, r.stars, r.private,
+
+                r.owner_id,
+                u.username AS owner_username,
+
+                r.fork_id,
+                fr.reponame AS fork_reponame,
+                fu.username AS fork_owner_username
             FROM repositories r
             LEFT JOIN users u ON u.user_id = r.owner_id
+            LEFT JOIN repositories fr ON r.fork_id = fr.repository_id
+            LEFT JOIN users fu ON fu.user_id = fr.owner_id
             WHERE
                 r.repository_id = $1
             """,
@@ -164,10 +178,18 @@ class RepositoryPageView:
             cls,
             """
             SELECT
-                r.repository_id, r.reponame, r.stars, r.private, r.fork_id,
-                r.owner_id, u.username
+                r.repository_id, r.reponame, r.stars, r.private,
+
+                r.owner_id,
+                u.username AS owner_username,
+
+                r.fork_id,
+                fr.reponame AS fork_reponame,
+                fu.username AS fork_owner_username
             FROM repositories r
             LEFT JOIN users u ON u.user_id = r.owner_id
+            LEFT JOIN repositories fr ON r.fork_id = fr.repository_id
+            LEFT JOIN users fu ON fu.user_id = fr.owner_id
             WHERE
                 u.username = $1 AND
                 r.reponame = $2

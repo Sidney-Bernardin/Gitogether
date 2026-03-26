@@ -26,7 +26,6 @@ app.include_router(pages.router)
 
 @app.exception_handler(RequestValidationError)
 async def validation_error_handler(req: Request, err: RequestValidationError):
-    print(err.errors())
     return templates.TemplateResponse(
         req, "form_validation_error.html.jinja", context={"errors": err.errors()}
     )

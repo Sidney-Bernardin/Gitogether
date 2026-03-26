@@ -31,6 +31,11 @@ async def create_repo(
         conn: Connection
         async with conn.transaction():
 
+            if await Repository.is_names_taken(
+                conn, username=session.username, reponame=form.reponame
+            ):
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT)
+
             repo = Repository(
                 repository_id=uuid4(),
                 reponame=form.reponame,
@@ -39,6 +44,7 @@ async def create_repo(
                 owner_id=session.user_id,
                 fork_id=None,
             )
+
             await repo.insert(conn)
 
             repo_path = Config.repositories_path / session.username / form.reponame
@@ -77,6 +83,14 @@ async def fork_repository(
             if not source_repo:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
+            if source_repo.fork_id is not None:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
+
+            if await Repository.is_names_taken(
+                conn, username=session.username, reponame=form.reponame
+            ):
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT)
+
             repo = Repository(
                 repository_id=uuid4(),
                 reponame=form.reponame,
@@ -87,7 +101,9 @@ async def fork_repository(
             )
             await repo.insert(conn)
 
-            source_path = Config.repositories_path / source_repo.username / source_repo.reponame
+            source_path = (
+                Config.repositories_path / source_repo.owner_username / source_repo.reponame
+            )
             dest_path = Config.repositories_path / session.username / form.reponame
             pygit2.clone_repository(str(source_path), str(dest_path))
 

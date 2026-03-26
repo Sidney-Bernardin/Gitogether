@@ -24,7 +24,7 @@ class User:
         )
 
     @classmethod
-    async def select_exists(cls, c: Connection, username: str) -> bool:
+    async def is_username_taken(cls, c: Connection, username: str) -> bool:
         return (
             await c.fetchrow(
                 """
