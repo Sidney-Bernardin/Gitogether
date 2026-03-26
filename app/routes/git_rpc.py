@@ -10,12 +10,12 @@ from app.dependencies import git_auth
 router = APIRouter()
 
 
-@router.get("/{username}/{repo_name}/info/refs")
-async def repo_info(_: git_auth, username: str, repo_name: str, service: str):
+@router.get("/{username}/{reponame}/info/refs")
+async def repo_info(_: git_auth, username: str, reponame: str, service: str):
     try:
         stdout = subprocess.run(
             ["git", service[4:], "--stateless-rpc", "--advertise-refs", "."],
-            cwd=Config.repositories_path / username / repo_name,
+            cwd=Config.repositories_path / username / reponame,
             capture_output=True,
         ).stdout
 
@@ -31,12 +31,12 @@ async def repo_info(_: git_auth, username: str, repo_name: str, service: str):
         return Response(status_code=status.HTTP_404_NOT_FOUND)
 
 
-@router.post("/{username}/{repo_name}/{service}")
-async def repo_service(req: Request, _: git_auth, username: str, repo_name: str, service: str):
+@router.post("/{username}/{reponame}/{service}")
+async def repo_service(req: Request, _: git_auth, username: str, reponame: str, service: str):
     try:
         process = subprocess.Popen(
             ["git", service[4:], "--stateless-rpc", "."],
-            cwd=Config.repositories_path / username / repo_name,
+            cwd=Config.repositories_path / username / reponame,
             stdout=subprocess.PIPE,
             stdin=subprocess.PIPE,
             stderr=subprocess.PIPE,

@@ -25,12 +25,15 @@ class User:
 
     @classmethod
     async def select_exists(cls, c: Connection, username: str) -> bool:
-        return None == await c.fetchrow(
-            """
-            SELECT 1 FROM users
-            WHERE username = $1
-            """,
-            username,
+        return (
+            await c.fetchrow(
+                """
+                SELECT 1 FROM users
+                WHERE username = $1
+                """,
+                username,
+            )
+            is not None
         )
 
     @classmethod

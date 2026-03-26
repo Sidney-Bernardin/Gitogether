@@ -1,25 +1,29 @@
 from typing import Annotated
 from pydantic import BaseModel, Field
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from asyncpg import Connection
 import pygit2
 
-from fastapi import APIRouter, Form, HTTPException, Request, status
+from fastapi import APIRouter, Form, HTTPException, Response, status
 
 from app.postgres import Repository, RepositoryPageView, acquire
-from app.dependencies import Config, SessionAuth, templates
+from app.dependencies import Config, SessionAuth
 
 router = APIRouter(prefix="/repositories")
 
 
 class CreateReposiotryForm(BaseModel):
     reponame: str = Field(min_length=1, max_length=50)
-    public: bool = Field(default=True)
+    private: bool = Field(default=False)
 
 
 @router.post("/")
-async def create_repo(req: Request, session: SessionAuth, form: Annotated[CreateReposiotryForm, Form()]):
+async def create_repo(
+    res: Response,
+    session: SessionAuth,
+    form: Annotated[CreateReposiotryForm, Form()],
+):
     if not session:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
@@ -29,11 +33,11 @@ async def create_repo(req: Request, session: SessionAuth, form: Annotated[Create
 
             repo = Repository(
                 repository_id=uuid4(),
-                name=form.reponame,
+                reponame=form.reponame,
+                private=form.private,
                 stars=0,
-                public=form.public,
                 owner_id=session.user_id,
-                fork_of=None,
+                fork_id=None,
             )
             await repo.insert(conn)
 
@@ -41,35 +45,50 @@ async def create_repo(req: Request, session: SessionAuth, form: Annotated[Create
             pygit2.init_repository(
                 repo_path,
                 bare=True,
-                flags=pygit2.enums.RepositoryInitFlag.MKPATH | pygit2.enums.RepositoryInitFlag.NO_REINIT,
+                flags=pygit2.enums.RepositoryInitFlag.MKPATH
+                | pygit2.enums.RepositoryInitFlag.NO_REINIT,
             )
 
-    return templates.TemplateResponse(
-        req,
-        "repository_list_item.html",
-        context={
-            "is_owner": True,
-            "repo": RepositoryPageView(
-                repository_id=repo.repository_id,
-                name=repo.name,
-                public=repo.public,
-                stars=repo.stars,
-                fork_of=repo.fork_of,
+    res.headers["HX-Redirect"] = f"/{session.username}/{repo.reponame}"
+
+
+class ForkReposiotryForm(BaseModel):
+    reponame: str = Field(min_length=1, max_length=50)
+
+
+@router.patch("/{repository_id}/fork", name="fork_repository")
+async def fork_repository(
+    res: Response,
+    session: SessionAuth,
+    repository_id: str,
+    form: Annotated[ForkReposiotryForm, Form()],
+):
+    if not session:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+
+    async with acquire() as conn:
+        conn: Connection
+        async with conn.transaction():
+
+            source_repo = await RepositoryPageView.select_by_id(
+                conn, repository_id=UUID(repository_id)
+            )
+
+            if not source_repo:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+            repo = Repository(
+                repository_id=uuid4(),
+                reponame=form.reponame,
+                private=False,
+                stars=0,
                 owner_id=session.user_id,
-                username=session.username,
-            ),
-        },
-    )
+                fork_id=UUID(repository_id),
+            )
+            await repo.insert(conn)
 
+            source_path = Config.repositories_path / source_repo.username / source_repo.reponame
+            dest_path = Config.repositories_path / session.username / form.reponame
+            pygit2.clone_repository(str(source_path), str(dest_path))
 
-# @router.patch("/{repository_id}/fork", name="create_repository_fork")
-# async def create_fork(req: Request, res: Response, repository_id: str, user: SessionAuth):
-#     if not user:
-#         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
-#
-#     f = await req.form()
-#     name = form_get_str(f, "name") or ""
-#
-#     repo = await fork_repository(user, repository_id, name)
-#
-#     res.headers["HX-Redirect"] = f"/{user.username}/{repo.name}"
+    res.headers["HX-Redirect"] = f"/{session.username}/{repo.reponame}"

@@ -1,18 +1,18 @@
 CREATE TABLE users (
     user_id uuid PRIMARY KEY,
 
-    username text NOT NULL,
+    username text NOT NULL UNIQUE,
     password bytea NOT NULL
 );
 
 CREATE TABLE repositories (
     repository_id uuid PRIMARY KEY,
 
-    name text NOT NULL,
-    public boolean NOT NULL,
+    reponame text NOT NULL,
+    private boolean NOT NULL,
     stars int NOT NULL,
 
-    fork_of uuid REFERENCES repositories(repository_id),
+    fork_id uuid REFERENCES repositories(repository_id),
     owner_id uuid REFERENCES users(user_id)
 );
 

@@ -55,17 +55,17 @@ class GitAuth(HTTPBasic):
         self,
         req: Request,
         username: str,
-        repo_name: str,
+        reponame: str,
         service: str,
     ) -> Tuple[User | None, Repository]:
         async with acquire() as conn:
             conn: Connection
 
-            repo = await Repository.select_by_names(conn, username, repo_name)
+            repo = await Repository.select_by_names(conn, username, reponame)
             if not repo:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
-            if repo.public and service == "git-upload-pack":
+            if not repo.private and service == "git-upload-pack":
                 return (None, repo)
 
             credentials = await super().__call__(req)
@@ -74,8 +74,9 @@ class GitAuth(HTTPBasic):
             user = await User.select_by_username(conn, username)
             if (
                 not user
-                or repo.owner_id != user.user_id
                 or not bcrypt.checkpw(credentials.password.encode(), user.password)
+                or repo.owner_id != user.user_id
+                or not Repository.has_contributor(conn, repo.repository_id, user.user_id)
             ):
                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 

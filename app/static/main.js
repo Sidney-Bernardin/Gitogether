@@ -1,6 +1,6 @@
-// document.body.addEventListener("htmx:responseError", (e) => {
-//   alert(e.detail.xhr.responseText);
-// });
+document.body.addEventListener("htmx:responseError", (e) => {
+  alert(e.detail.xhr.responseText);
+});
 
 document
   .querySelectorAll("form")

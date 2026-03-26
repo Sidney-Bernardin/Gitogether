@@ -7,12 +7,13 @@
 
 {% if is_owner %}
 <h2>Create Repository</h2>
-<form hx-post="/repositories" hx-target="#repositories" hx-swap="beforeend">
+<form id="create" hx-post="/gitogether/repositories/" hx-swap="none">
     <label for="reponame">Name</label>
     <input type="text" name="reponame" placeholder="Name">
 
-    <label for="public">Public</label>
-    <input type="checkbox" name="public">
+    <label for="private">Private</label>
+    <input type="checkbox" name="private">
+
     <input type="submit">
 </form>
 {% endif %}
@@ -22,8 +23,10 @@
 <ul id="repositories">
     {% for repo in repos %}
         <li>
-            <a href="{{ url_for('repository_page', username=user.username, repo_name=repo.name) }}">{{ repo.name }}</a>
-            {% if is_owner and not repo.public %}
+            <a href="{{ url_for('repository_page', username=username, reponame=repo.reponame) }}">
+                {{ repo.reponame }}
+            </a>
+            {% if is_owner and repo.private %}
                 <span>(private)</span>
             {% endif %}
         </li>
@@ -36,10 +39,9 @@
 <ul>
     {% for repo in contributed_repos %}
         <li>
-            <a href="{{ url_for('repository_page', username=user.username, repo_name=repo.name) }}">{{ repo.name }}</a>
-            {% if is_owner and not repo.public %}
-                <span>(private)</span>
-            {% endif %}
+            <a href="{{ url_for('repository_page', username=username, reponame=repo.reponame) }}">
+                {{ repo.reponame }}
+            </a>
         </li>
     {% else %}
         <li>No repositories</li>

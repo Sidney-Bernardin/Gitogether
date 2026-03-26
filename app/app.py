@@ -18,14 +18,15 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
+app.include_router(repositories.router, prefix="/gitogether")
+app.include_router(login.router)
 app.include_router(git_rpc.router)
 app.include_router(pages.router)
-app.include_router(login.router)
-app.include_router(repositories.router, prefix="/gitogether")
 
 
 @app.exception_handler(RequestValidationError)
 async def validation_error_handler(req: Request, err: RequestValidationError):
+    print(err.errors())
     return templates.TemplateResponse(
         req, "form_validation_error.html.jinja", context={"errors": err.errors()}
     )

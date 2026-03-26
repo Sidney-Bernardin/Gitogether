@@ -1,8 +1,7 @@
 import pygit2
 
 from typing import Any
-
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Request, status
 
 from app.dependencies import Config, Res, Session, SessionAuth, templates
 from app.postgres import Connection, acquire, Repository, RepositoryPageView, UserPageView
@@ -33,6 +32,7 @@ def signin_page(req: Request):
 
 class UserPage(Res):
     session: Session | None
+    username: str
     is_owner: bool
     user: UserPageView | None
     repos: list[Repository]
@@ -43,6 +43,7 @@ class UserPage(Res):
 async def user_page(req: Request, session: SessionAuth, username: str):
     res = UserPage(req, "pages/user.html.jinja")
     res.session = session
+    res.username = username
     res.is_owner = session is not None and session.username == username
 
     async with acquire() as conn:
@@ -69,20 +70,17 @@ class RepositoryPage(Res):
     file: Any
 
 
-@router.get("/{username}/{repo_name}", name="repository_page")
-@router.get("/{username}/{repo_name}/{commit_id}", name="repository_page")
-@router.get("/{username}/{repo_name}/{commit_id}/{path:path}", name="repository_page")
+@router.get("/{username}/{reponame}", name="repository_page")
+@router.get("/{username}/{reponame}/{commit_id}", name="repository_page")
+@router.get("/{username}/{reponame}/{commit_id}/{path:path}", name="repository_page")
 async def get_repo(
     req: Request,
     session: SessionAuth,
     username: str,
-    repo_name: str,
+    reponame: str,
     commit_id: str = "",
     path: str = "",
 ):
-    # if req.headers.get("git-protocol"):
-    #     return RedirectResponse(req.url_for(""))
-
     res = RepositoryPage(req, "pages/repository.html.jinja")
     res.session = session
     res.username = username
@@ -92,11 +90,18 @@ async def get_repo(
         async with acquire() as conn:
             conn: Connection
 
-            res.repo = await RepositoryPageView.select_by_names(conn, username, repo_name)
+            res.repo = await RepositoryPageView.select_by_names(conn, username, reponame)
             if not res.repo:
                 return res()
 
-        repo = pygit2.Repository(Config.repositories_path / username / repo_name)
+            if res.repo.private and not (
+                session
+                and res.repo.owner_id == session.user_id
+                and Repository.has_contributor(conn, res.repo.repository_id, session.user_id)
+            ):
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+
+        repo = pygit2.Repository(Config.repositories_path / username / reponame)
         res.commit_id = commit_id or repo.head.shorthand
         res.file = repo.revparse_single(f"{res.commit_id}:{path}")
 

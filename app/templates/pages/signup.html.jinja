@@ -3,21 +3,16 @@
 {% block title %}Sign Up - Gitogether{% endblock %}
 
 {% block content %}
-<form hx-post="/signup">
+<form id="signup" hx-post="/signup" hx-swap="none">
     <h1>Sign Up</h1>
 
-    <label>
-        Username
-        <input type="text" name="username">
-    </label>
+    <label for="username">Username</label>
+    <input type="text" name="username">
 
-    <label>
-        Password
-        <input type="password" name="password">
-    </label>
+    <label for="password">Password</label>
+    <input type="password" name="password">
 
-    <button type="submit">Sign Up</button>
-    <div class="err"></div>
+    <input type="submit" name="submit">Sign Up</input>
 </form>
 
 <p>Already have an account? <a href="/signin">Sign In</a></p>

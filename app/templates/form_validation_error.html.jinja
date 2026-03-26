@@ -8,6 +8,12 @@
     {% endif %}
 
     <div hx-swap-oob="afterend:{{selector}}">
-        <p class="err">{{ err }}</p>
+        <p class="err">
+            {% if err.msg %}
+                {{ err.msg }}
+            {% else %}
+                {{ err }}
+            {% endif %}
+        </p>
     </div>
 {% endfor %}

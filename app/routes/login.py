@@ -1,15 +1,17 @@
-import uuid
-import asyncpg
 import bcrypt
-from fastapi.exceptions import RequestValidationError
+import uuid
 import jwt
+
 from typing import Annotated
 from pydantic import BaseModel, Field
-from datetime import datetime, timezone, timedelta
-from fastapi import APIRouter, Form, Response
 from pydantic_core import PydanticCustomError
+from datetime import datetime, timezone, timedelta
+from asyncpg import Connection
 
-import app.postgres as pg
+from fastapi import APIRouter, Form, Response
+from fastapi.exceptions import RequestValidationError
+
+from app.postgres import acquire, User
 from app.config import Config
 
 router = APIRouter()
@@ -22,13 +24,13 @@ class SignupForm(BaseModel):
 
 @router.post("/signup")
 async def signup(res: Response, form: Annotated[SignupForm, Form()]):
-    async with pg.acquire() as conn:
-        conn: asyncpg.Connection
+    async with acquire() as conn:
+        conn: Connection
 
-        if await pg.User.select_exists(conn, form.username):
+        if await User.select_exists(conn, form.username):
             raise RequestValidationError([PydanticCustomError("username_taken", "Username taken.")])
 
-        user = pg.User(
+        user = User(
             user_id=uuid.uuid4(),
             username=form.username,
             password=bcrypt.hashpw(form.password.encode(), bcrypt.gensalt()),
@@ -47,10 +49,10 @@ class SigninForm(BaseModel):
 
 @router.post("/signin")
 async def signin(res: Response, form: Annotated[SigninForm, Form()]):
-    async with pg.acquire() as conn:
-        conn: asyncpg.Connection
+    async with acquire() as conn:
+        conn: Connection
 
-        user = await pg.User.select_by_username(conn, form.username)
+        user = await User.select_by_username(conn, form.username)
         if not user or not bcrypt.checkpw(form.password.encode(), user.password):
             raise RequestValidationError(
                 [
@@ -70,7 +72,7 @@ def signout(res: Response):
     res.headers["HX-Redirect"] = "/"
 
 
-def set_new_session(res: Response, user: pg.User):
+def set_new_session(res: Response, user: User):
     res.set_cookie(
         "session",
         httponly=True,
