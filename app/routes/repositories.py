@@ -1,20 +1,23 @@
-from typing import Annotated
-from pydantic import BaseModel, Field
-from uuid import UUID, uuid4
-
-from asyncpg import Connection
 import pygit2
 
+from typing import Annotated
+from uuid import UUID, uuid4
+from asyncpg import Connection
+
+from pydantic import BaseModel, Field
+from pydantic_core import PydanticCustomError
+
 from fastapi import APIRouter, Form, HTTPException, Response, status
+from fastapi.exceptions import RequestValidationError
 
 from app.postgres import Repository, RepositoryPageView, acquire
-from app.dependencies import Config, SessionAuth
+from app.dependencies import Config, SessionAuth, reponame_regex
 
 router = APIRouter(prefix="/repositories")
 
 
 class CreateReposiotryForm(BaseModel):
-    reponame: str = Field(min_length=1, max_length=50)
+    reponame: str = Field(min_length=1, max_length=50, pattern=reponame_regex)
     private: bool = Field(default=False)
 
 
@@ -34,7 +37,9 @@ async def create_repo(
             if await Repository.is_names_taken(
                 conn, username=session.username, reponame=form.reponame
             ):
-                raise HTTPException(status_code=status.HTTP_409_CONFLICT)
+                raise RequestValidationError(
+                    [PydanticCustomError("reponame_taken", "Repository name taken.")]
+                )
 
             repo = Repository(
                 repository_id=uuid4(),
@@ -59,7 +64,7 @@ async def create_repo(
 
 
 class ForkReposiotryForm(BaseModel):
-    reponame: str = Field(min_length=1, max_length=50)
+    reponame: str = Field(min_length=1, max_length=50, pattern=reponame_regex)
 
 
 @router.patch("/{repository_id}/fork", name="fork_repository")
@@ -89,7 +94,9 @@ async def fork_repository(
             if await Repository.is_names_taken(
                 conn, username=session.username, reponame=form.reponame
             ):
-                raise HTTPException(status_code=status.HTTP_409_CONFLICT)
+                raise RequestValidationError(
+                    [PydanticCustomError("reponame_taken", "Repository name taken.")]
+                )
 
             repo = Repository(
                 repository_id=uuid4(),

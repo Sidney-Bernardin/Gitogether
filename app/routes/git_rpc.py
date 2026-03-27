@@ -5,13 +5,15 @@ from fastapi import APIRouter, Request, Response, status
 from fastapi.responses import StreamingResponse
 
 from app.config import Config
-from app.dependencies import git_auth
+from app.dependencies import ReponamePathParam, UsernamePathParam, git_auth
 
 router = APIRouter()
 
 
 @router.get("/{username}/{reponame}/info/refs")
-async def repo_info(_: git_auth, username: str, reponame: str, service: str):
+async def repo_info(
+    _: git_auth, username: UsernamePathParam, reponame: ReponamePathParam, service: str
+):
     try:
         stdout = subprocess.run(
             ["git", service[4:], "--stateless-rpc", "--advertise-refs", "."],
@@ -32,7 +34,13 @@ async def repo_info(_: git_auth, username: str, reponame: str, service: str):
 
 
 @router.post("/{username}/{reponame}/{service}")
-async def repo_service(req: Request, _: git_auth, username: str, reponame: str, service: str):
+async def repo_service(
+    req: Request,
+    _: git_auth,
+    username: UsernamePathParam,
+    reponame: ReponamePathParam,
+    service: str,
+):
     try:
         process = subprocess.Popen(
             ["git", service[4:], "--stateless-rpc", "."],

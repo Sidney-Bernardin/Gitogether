@@ -13,12 +13,13 @@ from fastapi.exceptions import RequestValidationError
 
 from app.postgres import acquire, User
 from app.config import Config
+from app.dependencies import username_regex
 
 router = APIRouter()
 
 
 class SignupForm(BaseModel):
-    username: str = Field(min_length=3, max_length=50)
+    username: str = Field(min_length=3, max_length=50, pattern=username_regex)
     password: str = Field(min_length=6, max_length=50)
 
 
@@ -43,7 +44,7 @@ async def signup(res: Response, form: Annotated[SignupForm, Form()]):
 
 
 class SigninForm(BaseModel):
-    username: str = Field(min_length=3, max_length=50)
+    username: str = Field(min_length=3, max_length=50, pattern=username_regex)
     password: str = Field(min_length=6, max_length=50)
 
 

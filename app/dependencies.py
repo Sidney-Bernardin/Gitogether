@@ -7,7 +7,7 @@ from typing import Annotated, Tuple
 from pydantic.dataclasses import dataclass
 from asyncpg import Connection
 
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Depends, HTTPException, Path, Request, status
 from fastapi.security import HTTPBasic
 from fastapi.templating import Jinja2Templates
 from starlette.templating import _TemplateResponse
@@ -35,6 +35,13 @@ class Session:
     username: str
 
 
+username_regex = r"^[a-zA-Z0-9_-]+$"
+UsernamePathParam = Annotated[str, Path(title="username", pattern=username_regex)]
+
+reponame_regex = r"^[a-zA-Z0-9_-]+$"
+ReponamePathParam = Annotated[str, Path(title="reponame", pattern=reponame_regex)]
+
+
 def session_auth(req: Request) -> Session | None:
     try:
         session = jwt.decode(req.cookies["session"], Config.jwt_secret, algorithms=["HS256"])
@@ -54,8 +61,8 @@ class GitAuth(HTTPBasic):
     async def __call__(
         self,
         req: Request,
-        username: str,
-        reponame: str,
+        username: UsernamePathParam,
+        reponame: ReponamePathParam,
         service: str,
     ) -> Tuple[User | None, Repository]:
         async with acquire() as conn:
@@ -71,13 +78,16 @@ class GitAuth(HTTPBasic):
             credentials = await super().__call__(req)
             assert credentials is not None
 
-            user = await User.select_by_username(conn, username)
+            user = await User.select_by_username(conn, credentials.username)
             if (
-                not user
+                user is None
                 or not bcrypt.checkpw(credentials.password.encode(), user.password)
-                or repo.owner_id != user.user_id
-                or not await Repository.has_contributor(conn, repo.repository_id, user.user_id)
+                or (
+                    repo.owner_id != user.user_id
+                    and not await Repository.has_contributor(conn, repo.repository_id, user.user_id)
+                )
             ):
+                print(user is None)
                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
         return (user, repo)

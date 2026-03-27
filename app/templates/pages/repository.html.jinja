@@ -3,38 +3,38 @@
 {% block title %}{{ repo.reponame }}{% endblock %}
 
 {% block content %}
-<h1><a href="{{ url_for("user_page", username=username) }}">{{ username }}</a> / {{ repo.reponame }}</h1>
+    {% if not repo %}
+        <p>Repo not found.</p>
+    {% else %}
+        <h1><a href="{{ url_for("user_page", username=username) }}">{{ username }}</a> / {{ repo.reponame }}</h1>
 
-{% if repo.fork_id %}
-    <a href="{{ url_for('repository_page', username=repo.fork_owner_username, reponame=repo.fork_reponame) }}">
-        {{ repo.fork_owner_username }} / {{ repo.fork_reponame }}
-    </a>
-{% endif %}
-
-{% if session and session.username != username %}
-<form id="fork" hx-patch="{{ url_for("fork_repository", repository_id=repo.repository_id) }}" hx-swap="none">
-    <input type="text" name="reponame" value="{{ repo.reponame }}">
-    <input type="submit">
-</form>
-{% endif %}
-
-{% if not repo %}
-    <p>Repo not found.</p>
-{% elif not commit_id %}
-    <p>No commits.</p>
-{% elif not file %}
-    <p>File not found.</p>
-{% elif file.type_str == "tree" %}
-    <ul>
-        {% for f in file %}
-            <a href="{{ url_for("repository_page", username=username, reponame=repo.reponame, commit_id=commit_id, path=file_path_sufix~f.name) }}">
-                {{ f.name }}
+        {% if repo.fork_id %}
+            <a href="{{ url_for('repository_page', username=repo.fork_owner_username, reponame=repo.fork_reponame) }}">
+                {{ repo.fork_owner_username }} / {{ repo.fork_reponame }}
             </a>
-        {% endfor %}
-    </ul>
-{% elif file.type_str == "blob" %}
-    {{ file.data }}
-{% else %}
-    
-{% endif %}
+        {% endif %}
+
+        {% if session and session.username != username %}
+            <form id="fork" hx-patch="{{ url_for("fork_repository", repository_id=repo.repository_id) }}" hx-swap="none">
+                <input type="text" name="reponame" value="{{ repo.reponame }}">
+                <input type="submit">
+            </form>
+        {% endif %}
+
+        {% if not commit_id %}
+            <p>No commits.</p>
+        {% elif not file %}
+            <p>File not found.</p>
+        {% elif file.type_str == "tree" %}
+            <ul>
+                {% for f in file %}
+                    <a href="{{ url_for("repository_page", username=username, reponame=repo.reponame, commit_id=commit_id, path=file_path_sufix~f.name) }}">
+                        {{ f.name }}
+                    </a>
+                {% endfor %}
+            </ul>
+        {% elif file.type_str == "blob" %}
+            {{ file.data }}
+        {% endif %}
+    {% endif %}
 {% endblock %}

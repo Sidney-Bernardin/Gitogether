@@ -3,8 +3,16 @@ import pygit2
 from typing import Any
 from fastapi import APIRouter, HTTPException, Request, status
 
-from app.dependencies import Config, Res, Session, SessionAuth, templates
 from app.postgres import Connection, acquire, Repository, RepositoryPageView, UserPageView
+from app.dependencies import (
+    Config,
+    Res,
+    Session,
+    SessionAuth,
+    UsernamePathParam,
+    ReponamePathParam,
+    templates,
+)
 
 router = APIRouter()
 
@@ -40,7 +48,7 @@ class UserPage(Res):
 
 
 @router.get("/{username}", name="user_page")
-async def user_page(req: Request, session: SessionAuth, username: str):
+async def user_page(req: Request, session: SessionAuth, username: UsernamePathParam):
     res = UserPage(req, "pages/user.html.jinja")
     res.session = session
     res.username = username
@@ -76,8 +84,8 @@ class RepositoryPage(Res):
 async def get_repo(
     req: Request,
     session: SessionAuth,
-    username: str,
-    reponame: str,
+    username: UsernamePathParam,
+    reponame: ReponamePathParam,
     commit_id: str = "",
     path: str = "",
 ):
@@ -94,11 +102,13 @@ async def get_repo(
             if not res.repo:
                 return res()
 
-            if res.repo.private and not (
+            if res.repo.private and (
                 not session
-                or res.repo.owner_id != session.user_id
-                or not await Repository.has_contributor(
-                    conn, res.repo.repository_id, session.user_id
+                or (
+                    res.repo.owner_id != session.user_id
+                    and not await Repository.has_contributor(
+                        conn, res.repo.repository_id, session.user_id
+                    )
                 )
             ):
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
