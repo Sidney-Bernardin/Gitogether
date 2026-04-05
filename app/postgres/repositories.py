@@ -7,6 +7,51 @@ from .postgres import fetchrows, fetchrow
 
 
 @dataclass
+class PullRequest:
+    pull_request_id: UUID
+
+    complete: bool
+    approved: bool
+
+    target_repository: UUID
+    source_repository: UUID
+
+    source_branch: str
+    target_branch: str
+
+    async def insert(self, c: Connection) -> str:
+        return await c.execute(
+            """
+            INSERT INTO pull_requests (pull_request_id, complete, approved, target_repository, source_repository, source_branch, target_branch)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            """,
+            self.pull_request_id,
+            self.complete,
+            self.approved,
+            self.target_repository,
+            self.source_repository,
+            self.source_branch,
+            self.target_branch,
+        )
+
+    @classmethod
+    async def select_by_id(cls, c: Connection, pull_request_id: UUID) -> Self | None:
+        return await fetchrow(
+            c,
+            cls,
+            """
+            SELECT
+                pull_request_id, complete, approved,
+                target_repository, source_repository,
+                source_branch, target_branch
+            FROM pull_requests
+            WHERE pull_request_id = $1
+            """,
+            pull_request_id,
+        )
+
+
+@dataclass
 class Repository:
     repository_id: UUID
 

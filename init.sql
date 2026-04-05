@@ -22,8 +22,11 @@ CREATE TABLE pull_requests (
     complete boolean NOT NULL,
     approved boolean NOT NULL,
 
+    source_repository uuid REFERENCES repositories(repository_id),
     target_repository uuid REFERENCES repositories(repository_id),
-    source_repository uuid REFERENCES repositories(repository_id)
+
+    source_branch text NOT NULL,
+    target_branch text NOT NULL
 );
 
 CREATE TABLE repository_contributors (

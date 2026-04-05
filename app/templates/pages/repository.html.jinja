@@ -9,9 +9,16 @@
         <h1><a href="{{ url_for("user_page", username=username) }}">{{ username }}</a> / {{ repo.reponame }}</h1>
 
         {% if repo.fork_id %}
-            <a href="{{ url_for('repository_page', username=repo.fork_owner_username, reponame=repo.fork_reponame) }}">
-                {{ repo.fork_owner_username }} / {{ repo.fork_reponame }}
-            </a>
+            <p>
+                Fork of:
+                <a href="{{ url_for("repository_page", username=repo.fork_owner_username, reponame=repo.fork_reponame) }}">
+                    {{ repo.fork_owner_username }} / {{ repo.fork_reponame }}
+                </a>
+                &nbsp;
+                <a href="{{ url_for("create_pull_request_page", username=repo.fork_owner_username, reponame=repo.fork_reponame).include_query_params(source_repo_id=repo.repository_id) }}">
+                    (Create Pull-Request)
+                </a>
+            </p>
         {% endif %}
 
         {% if session and session.username != username %}
@@ -20,6 +27,8 @@
                 <input type="submit">
             </form>
         {% endif %}
+
+        <hr>
 
         {% if not commit_id %}
             <p>No commits.</p>

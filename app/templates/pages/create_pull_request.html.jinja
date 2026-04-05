@@ -1,0 +1,61 @@
+{% extends "pages/layout.html.jinja" %}
+
+{% block title %}{{ repo.reponame }}{% endblock %}
+
+{% block content %}
+    {% if not repo %}
+        <p>Repo not found.</p>
+    {% else %}
+        <h1>
+            <a href="{{ url_for("user_page", username=username) }}">{{ username }}</a>
+            /
+            <a href="{{ url_for("repository_page", username=username, reponame=repo.reponame) }}">{{ repo.reponame }}</a>
+        </h1>
+
+        <hr>
+
+        {% if session and source_repo and session.user_id == source_repo.owner_id %}
+            <h2>Create Pull-Request</h2>
+            <form id="createpr" hx-post="{{ url_for("create_pull_request", target_repo_id=repo.repository_id).include_query_params(source_repo_id=source_repo.repository_id) }}" hx-swap="none">
+                <input type="text" name="title" placeholder="Title">
+
+                <div class="branches">
+                    <label for="source_branch">
+                        {{ source_repo.owner_username }} / {{ source_repo.reponame }} /
+                        <select name="source_branch">
+                            {% for branch in source_repo_branches %}
+                                <option value="{{branch}}">{{branch}}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+
+                    >>>
+
+                    <label for="target_branch">
+                        {{ repo.owner_username }} / {{ repo.reponame }} /
+                        <select name="target_branch">
+                            {% for branch in repo_branches %}
+                                <option value="{{branch}}">{{branch}}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                </div>
+
+                <input type="submit" value="Create Pull-Request">
+            </form>
+        {% endif %}
+    {% endif %}
+{% endblock %}
+
+{% block style %}
+.branches {
+    display: flex;
+    gap: 1em;
+    align-items: center;
+}
+
+.branches label {
+    padding: 0.25em;
+    border: 1px dashed gray;
+}
+{% endblock %}

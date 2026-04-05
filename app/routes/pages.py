@@ -1,7 +1,9 @@
+from uuid import UUID
 import pygit2
 
 from typing import Any
 from fastapi import APIRouter, HTTPException, Request, status
+from fastapi.responses import JSONResponse
 
 from app.postgres import Connection, acquire, Repository, RepositoryPageView, UserPageView
 from app.dependencies import (
@@ -79,8 +81,8 @@ class RepositoryPage(Res):
 
 
 @router.get("/{username}/{reponame}", name="repository_page")
-@router.get("/{username}/{reponame}/{commit_id}", name="repository_page")
-@router.get("/{username}/{reponame}/{commit_id}/{path:path}", name="repository_page")
+@router.get("/{username}/{reponame}/commits/{commit_id}", name="repository_page")
+@router.get("/{username}/{reponame}/commits/{commit_id}/{path:path}", name="repository_page")
 async def get_repo(
     req: Request,
     session: SessionAuth,
@@ -127,3 +129,56 @@ async def get_repo(
         ):
             return res()
         raise err
+
+
+class CreatePullRequestPage(Res):
+    session: Session | None
+    username: str
+    repo: RepositoryPageView | None = None
+    repo_branches: list[str] | None = None
+    source_repo: RepositoryPageView | None = None
+    source_repo_branches: list[str] | None = None
+    file: Any
+
+
+@router.get("/{username}/{reponame}/create-pull-request", name="create_pull_request_page")
+async def create_pull_request_page(
+    req: Request,
+    session: SessionAuth,
+    username: UsernamePathParam,
+    reponame: ReponamePathParam,
+    source_repo_id: str | None = None,
+):
+    res = CreatePullRequestPage(req, "pages/create_pull_request.html.jinja")
+    res.session = session
+    res.username = username
+
+    async with acquire() as conn:
+        conn: Connection
+
+        res.repo = await RepositoryPageView.select_by_names(conn, username, reponame)
+        if not res.repo:
+            return res()
+
+        if source_repo_id:
+            res.source_repo = await RepositoryPageView.select_by_id(conn, UUID(source_repo_id))
+
+        if not res.source_repo:
+            return res()
+
+        if res.source_repo.private and (
+            not session
+            or not await Repository.has_contributor(conn, res.repo.repository_id, session.user_id)
+        ):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+
+    repo = pygit2.Repository(Config.repositories_path / username / reponame)
+    res.repo_branches = [branch for branch in repo.branches]
+
+    source_repo_path = (
+        Config.repositories_path / res.source_repo.owner_username / res.source_repo.reponame
+    )
+    source_repo = pygit2.Repository(source_repo_path)
+    res.source_repo_branches = [branch for branch in source_repo.branches]
+
+    return res()
