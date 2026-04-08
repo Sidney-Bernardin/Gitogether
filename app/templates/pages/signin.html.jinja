@@ -1,4 +1,4 @@
-{% extends "pages/layout.html.jinja" %}
+{% extends "layout.html.jinja" %}
 
 {% block title %}Sign In - Gitogether{% endblock %}
 
@@ -7,10 +7,10 @@
     <h1>Sign In</h1>
 
     <label for="username">Username</label>
-    <input type="text" name="username">
+    <input type="text" name="username" placeholder="Username">
 
     <label for="password">Password</label>
-    <input type="password" name="password">
+    <input type="password" name="password" placeholder="Password">
 
     <input type="submit" name="submit" value="Sign In">
 </form>

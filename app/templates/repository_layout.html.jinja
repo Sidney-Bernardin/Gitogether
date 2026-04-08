@@ -1,0 +1,22 @@
+{% extends "layout.html.jinja" %}
+
+{% block title %}{{ repo.reponame }}{% endblock %}
+
+{% block content %}
+    {% if not repo %}
+        <p>Repo not found.</p>
+    {% else %}
+        <h1>
+            <a href="{{ url_for("user_page", username=username) }}">{{ username }}</a>
+            /
+            <a href="{{ url_for("repository_page", username=username, reponame=repo.reponame) }}">{{ repo.reponame }}</a>
+        </h1>
+
+        <hr>
+
+        {% block repo_content %}{% endblock %}
+    {% endif %}
+{% endblock %}
+
+{% block style %}
+{% endblock %}

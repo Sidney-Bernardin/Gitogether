@@ -1,0 +1,18 @@
+{% extends "repository_layout.html.jinja" %}
+
+{% block title %}{{pull_req.title}} | {{ super() }}{% endblock %}
+
+{% block repo_content %}
+    <h1>{{ pull_req.title }}</h1>
+    <p>
+        {{ pull_req.source_branch }}
+        <span>>>></span>
+        {{ pull_req.target_branch }}
+    </p>
+    <p>{{ pull_req.description }}</p>
+
+    {{ diff }}
+{% endblock %}
+
+{% block style %}
+{% endblock %}

@@ -1,4 +1,4 @@
-{% extends "pages/layout.html.jinja" %}
+{% extends "layout.html.jinja" %}
 
 {% block title %}{{ user.username }}{% endblock %}
 
@@ -29,7 +29,7 @@
             {% if is_owner and repo.private %}
                 <span>(private)</span>
             {% endif %}
-            {% if repo.fork_id %}
+            {% if repo.parent_id %}
                 <span>(fork)</span>
             {% endif %}
         </li>

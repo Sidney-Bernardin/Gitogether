@@ -87,7 +87,6 @@ class GitAuth(HTTPBasic):
                     and not await Repository.has_contributor(conn, repo.repository_id, user.user_id)
                 )
             ):
-                print(user is None)
                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
         return (user, repo)

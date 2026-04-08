@@ -12,21 +12,21 @@ CREATE TABLE repositories (
     private boolean NOT NULL,
     stars int NOT NULL,
 
-    fork_id uuid REFERENCES repositories(repository_id),
-    owner_id uuid REFERENCES users(user_id)
+    parent_id uuid REFERENCES repositories(repository_id),
+    owner_id uuid NOT NULL REFERENCES users(user_id)
 );
 
 CREATE TABLE pull_requests (
     pull_request_id uuid PRIMARY KEY,
 
-    complete boolean NOT NULL,
-    approved boolean NOT NULL,
-
-    source_repository uuid REFERENCES repositories(repository_id),
-    target_repository uuid REFERENCES repositories(repository_id),
+    title text NOT NULL,
+    description text NOT NULL,
 
     source_branch text NOT NULL,
-    target_branch text NOT NULL
+    target_branch text NOT NULL,
+
+    source_id uuid REFERENCES repositories(repository_id),
+    target_id uuid NOT NULL REFERENCES repositories(repository_id)
 );
 
 CREATE TABLE repository_contributors (

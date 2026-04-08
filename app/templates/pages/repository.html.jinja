@@ -1,4 +1,4 @@
-{% extends "pages/layout.html.jinja" %}
+{% extends "layout.html.jinja" %}
 
 {% block title %}{{ repo.reponame }}{% endblock %}
 
@@ -8,18 +8,24 @@
     {% else %}
         <h1><a href="{{ url_for("user_page", username=username) }}">{{ username }}</a> / {{ repo.reponame }}</h1>
 
-        {% if repo.fork_id %}
+        {% if repo.parent_id %}
             <p>
                 Fork of:
-                <a href="{{ url_for("repository_page", username=repo.fork_owner_username, reponame=repo.fork_reponame) }}">
-                    {{ repo.fork_owner_username }} / {{ repo.fork_reponame }}
+                <a href="{{ url_for("repository_page", username=repo.parent_owner_username, reponame=repo.parent_reponame) }}">
+                    {{ repo.parent_owner_username }} / {{ repo.parent_reponame }}
                 </a>
                 &nbsp;
-                <a href="{{ url_for("create_pull_request_page", username=repo.fork_owner_username, reponame=repo.fork_reponame).include_query_params(source_repo_id=repo.repository_id) }}">
+                <a href="{{ url_for("create_pull_request_page", username=repo.parent_owner_username, reponame=repo.parent_reponame).include_query_params(child=repo.repository_id) }}">
                     (Create Pull-Request)
                 </a>
             </p>
         {% endif %}
+
+        {% for branch in repo_branches %}
+            <a href="{{ url_for("repository_page", username=username, reponame=repo.reponame, ) }}">
+                {{ branch }}
+            </a>
+        {% endfor %}
 
         {% if session and session.username != username %}
             <form id="fork" hx-patch="{{ url_for("fork_repository", repository_id=repo.repository_id) }}" hx-swap="none">
