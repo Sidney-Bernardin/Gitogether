@@ -11,7 +11,18 @@
     </p>
     <p>{{ pull_req.description }}</p>
 
-    {{ diff }}
+    {% if conflicts %}
+        Conflicts detected:
+        <ul>
+            {% for c in conflicts %}
+                <li>{{ c }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <div class="diff" data-diff="{{ diff }}"></div>
+    {% endif %}
+
+    <button>Merge</button>
 {% endblock %}
 
 {% block style %}

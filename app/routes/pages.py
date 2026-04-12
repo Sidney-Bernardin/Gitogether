@@ -87,9 +87,9 @@ class RepositoryPage(Res):
     file: Any
 
 
-@router.get("/{username}/{reponame}", name="repository_page")
-@router.get("/{username}/{reponame}/commits/{commit_id}", name="repository_page")
-@router.get("/{username}/{reponame}/commits/{commit_id}/{path:path}", name="repository_page")
+@router.get("/{username}/{reponame}", name="repository_code_page")
+@router.get("/{username}/{reponame}/code/{commit_id}", name="repository_code_page")
+@router.get("/{username}/{reponame}/code/{commit_id}/{path:path}", name="repository_code_page")
 async def get_repo(
     req: Request,
     session: SessionAuth,
@@ -128,6 +128,8 @@ async def get_repo(
             res.commit_id = commit_id or repo.head.shorthand
             res.file = repo.revparse_single(f"{res.commit_id}:{path}")
         except KeyError:
+            pass
+        except pygit2.GitError:
             pass
 
         return res()
@@ -199,6 +201,7 @@ class PullRequestPage(Res):
     username: str
     repo: RepositoryPageView | None = None
     pull_req: PullRequest | None = None
+    conflicts: list[str] | None = None
     diff: pygit2.Diff | None = None
 
 
@@ -227,14 +230,20 @@ async def pull_request_page(
 
     repo = pygit2.Repository(Config.repositories_path / username / reponame)
     repo.remotes[str(res.pull_req.pull_request_id)].fetch()
-    diff = repo.diff(
-        (
-            f"refs/heads/{res.pull_req.source_branch}"
-            if res.pull_req.source_branch == "HEAD"
-            else f"refs/remotes/{res.pull_req.pull_request_id}/{res.pull_req.source_branch}"
-        ),
-        res.pull_req.target_branch,
+
+    target_branch = repo.lookup_reference(f"refs/heads/{res.pull_req.target_branch}")
+    source_branch = repo.lookup_reference(
+        f"refs/heads/{res.pull_req.source_branch}"
+        if res.pull_req.source_branch == "HEAD"
+        else f"refs/remotes/{res.pull_req.pull_request_id}/{res.pull_req.source_branch}"
     )
+
+    index = repo.merge_commits(target_branch.target, source_branch.target)
+    if index.conflicts:
+        res.conflicts = [c[1].path for c in index.conflicts]
+        return res()
+
+    diff = index.diff_to_tree(repo.head.peel(pygit2.Tree))
     res.diff = "".join(([p.text for p in diff]))
 
     return res()

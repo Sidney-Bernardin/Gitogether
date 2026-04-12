@@ -1,3 +1,13 @@
+{% set route_name = request.scope.get("route").name %}
+
+{% macro nav_item(name, path) %}
+    <li class="{{ "active" if route_name == name }}">
+        <a href="{{ path }}">
+            {{ caller() }}
+        </a>
+    </li>
+{% endmacro %}
+
 <!DOCTYPE html>
 <html lang="en">
     <head>
@@ -13,29 +23,33 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
         <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/diff2html/bundles/css/diff2html.min.css" />
         <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/diff2html/bundles/js/diff2html-ui.min.js"></script>
+        <script src="https://kit.fontawesome.com/57e5da63fa.js" crossorigin="anonymous"></script>
 
-        <style>
-        form {
-            display: flex;
-            flex-direction: column;
-            width: fit-content;
-        }
-        </style>
-
-        <style>
-        {% block style %}{% endblock %}
-        </style>
+        {% block head %}{% endblock %}
     </head>
     <body>
         <nav>
-            <a href="/">Home</a>
+            <ul>
+                {% call nav_item("home", "/") %}/home{% endcall %}
+                {% if session %}
+                    {% call nav_item("user_page", url_for("user_page", username=session.username)) %}
+                        /profile
+                    {% endcall %}
+                {% endif %}
+            </ul>
+
+            <div class="search-bar">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" placeholder="Username">
+                <input type="text" placeholder="Reponame">
+            </div>
+
             {% if session %}
-            <a href="{{ url_for("user_page", username=session.username) }}">{{ session.username }}</a>
-                <button hx-get="/signout">Sign Out</button>
+                <a href="{{ url_for("user_page", username=session.username) }}">{{ session.username }}</a>
             {% else %}
                 <a href="/signin">Sign In</a>
                 <a href="/signup">Sign Up</a>
-            {% endif %}
+            {% endif %} 
         </nav>
         <div class="content">
             {% block content %}{% endblock %}
