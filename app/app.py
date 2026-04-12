@@ -17,7 +17,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+app.mount("/static", StaticFiles(directory="app/static/dist"), name="static")
 app.include_router(repositories.router, prefix="/gitogether")
 app.include_router(login.router)
 app.include_router(git_rpc.router)

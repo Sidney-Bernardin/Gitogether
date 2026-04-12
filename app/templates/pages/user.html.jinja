@@ -23,7 +23,7 @@
 <ul id="repositories">
     {% for repo in repos %}
         <li>
-            <a href="{{ url_for('repository_page', username=username, reponame=repo.reponame) }}">
+            <a href="{{ url_for('repository_code_page', username=username, reponame=repo.reponame) }}">
                 {{ repo.reponame }}
             </a>
             {% if is_owner and repo.private %}

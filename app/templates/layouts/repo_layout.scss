@@ -1,0 +1,11 @@
+.content {
+    display: flex;
+}
+
+.side-bar {
+    display: flex;
+    flex-direction: column;
+
+    background: var(--bg-b);
+    box-shadow: var(--shadow-outset-b);
+}
