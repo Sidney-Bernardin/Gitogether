@@ -28,7 +28,7 @@ router = APIRouter()
 @router.get("/")
 async def home(req: Request, session: SessionAuth):
     return templates.TemplateResponse(
-        "pages/home.html.jinja",
+        "pages/home.html",
         {
             "request": req,
             "session": session,
@@ -38,12 +38,12 @@ async def home(req: Request, session: SessionAuth):
 
 @router.get("/signup")
 def signup_page(req: Request):
-    return templates.TemplateResponse("pages/signup.html.jinja", {"request": req})
+    return templates.TemplateResponse("pages/signup.html", {"request": req})
 
 
 @router.get("/signin")
 def signin_page(req: Request):
-    return templates.TemplateResponse("pages/signin.html.jinja", {"request": req})
+    return templates.TemplateResponse("pages/signin.html", {"request": req})
 
 
 class UserPage(Res):
@@ -57,7 +57,7 @@ class UserPage(Res):
 
 @router.get("/{username}", name="user_page")
 async def user_page(req: Request, session: SessionAuth, username: UsernamePathParam):
-    res = UserPage(req, "pages/user.html.jinja")
+    res = UserPage(req, "pages/user.html")
     res.session = session
     res.username = username
     res.is_owner = session is not None and session.username == username
@@ -98,7 +98,7 @@ async def get_repo(
     commit_id: str = "",
     path: str = "",
 ):
-    res = RepositoryPage(req, "pages/repository.html.jinja")
+    res = RepositoryPage(req, "pages/repository.html")
     res.session = session
     res.username = username
     res.file_path_sufix = f"{path}/" if path else ""
@@ -161,7 +161,7 @@ async def create_pull_request_page(
     reponame: ReponamePathParam,
     child: str | None = None,
 ):
-    res = CreatePullRequestPage(req, "pages/create_pull_request.html.jinja")
+    res = CreatePullRequestPage(req, "pages/create_pull_request.html")
     res.session = session
     res.username = username
 
@@ -213,7 +213,7 @@ async def pull_request_page(
     reponame: ReponamePathParam,
     pull_request_id: str,
 ):
-    res = PullRequestPage(req, "pages/pull_request.html.jinja")
+    res = PullRequestPage(req, "pages/pull_request.html")
     res.session = session
     res.username = username
 

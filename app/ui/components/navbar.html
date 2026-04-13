@@ -1,0 +1,33 @@
+{% set route_name = request.scope.get("route").name %}
+
+{% macro nav_item(name, path) %}
+    <li class="{{ "active" if route_name == name }}">
+        <a href="{{ path }}">
+            {{ caller() }}
+        </a>
+    </li>
+{% endmacro %}
+
+<nav>
+    <ul>
+        {% call nav_item("home", "/") %}/home{% endcall %}
+        {% if session %}
+            {% call nav_item("user_page", url_for("user_page", username=session.username)) %}
+                /profile
+            {% endcall %}
+        {% endif %}
+    </ul>
+
+    <div class="search-bar">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" placeholder="Username">
+        <input type="text" placeholder="Reponame">
+    </div>
+
+    <ul>
+        {% if not session %}
+            <a href="/signin">Sign In</a>
+            <a href="/signup">Sign Up</a>
+        {% endif %} 
+    </ul>
+</nav>

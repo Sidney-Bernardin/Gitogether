@@ -1,0 +1,86 @@
+@use "../main" as *;
+
+.content {
+  display: flex;
+}
+
+.side-bar {
+  display: flex;
+  gap: 2rem;
+  flex-direction: column;
+
+  padding: 2rem 0;
+
+  background: $bg-b;
+  box-shadow: $shadow-a-left;
+
+  .head {
+    display: flex;
+    flex-direction: column;
+
+    a {
+      padding: 0 2rem;
+
+      &:nth-child(1) {
+        color: $text-a;
+        font-size: 1.5rem;
+        font-weight: 600;
+      }
+
+      &:nth-child(2) {
+        color: $text-a;
+        font-size: 2rem;
+        font-weight: 900;
+        padding-left: 3.5rem;
+      }
+
+      &:nth-child(3) {
+        margin-top: 0.75rem;
+        color: $text-b;
+      }
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+
+  ul {
+    display: flex;
+    flex-direction: column;
+
+    li {
+      border-top-right-radius: 1rem;
+      border-bottom-right-radius: 1rem;
+      padding: 1rem 1.5rem;
+
+      font-size: 2rem;
+      text-transform: capitalize;
+
+      transition: 0.1s;
+
+      &.active {
+        z-index: 1;
+        background: $bg-c;
+        font-weight: bold;
+        box-shadow: inset $highlight-a-top, $shadow-a-bottom;
+
+        a {
+          color: $text-a;
+        }
+      }
+
+      &:hover {
+        background: $bg-c;
+
+        a {
+          color: $text-a;
+        }
+      }
+
+      a {
+        color: $text-b;
+      }
+    }
+  }
+}

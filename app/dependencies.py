@@ -15,7 +15,7 @@ from starlette.templating import _TemplateResponse
 from app.postgres import Repository, User, acquire
 from app.config import Config
 
-templates = Jinja2Templates(os.path.join(os.path.dirname(__file__), "templates"))
+templates = Jinja2Templates(os.path.join(os.path.dirname(__file__), "ui"))
 
 
 class Res:

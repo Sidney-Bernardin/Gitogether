@@ -1,0 +1,65 @@
+$bg-a: hsl(360, 50%, 5%);
+$bg-b: hsl(360, 50%, 10%);
+$bg-c: hsl(360, 50%, 15%);
+$bg-d: hsl(360, 50%, 20%);
+
+$text-a: hsl(360, 50%, 95%);
+$text-b: hsl(360, 50%, 80%);
+
+$shadow-a: 4px #00000030;
+$shadow-a-top: 0px -2px $shadow-a;
+$shadow-a-bottom: 0px 2px $shadow-a;
+$shadow-a-left: 2px 0px $shadow-a;
+$shadow-a-right: -2px 0px $shadow-a;
+
+$shadow-b: 8px #00000050;
+$shadow-b-top: 0px -2px $shadow-b;
+$shadow-b-bottom: 0px 2px $shadow-b;
+$shadow-b-left: 2px 0px $shadow-b;
+$shadow-b-right: -2px 0px $shadow-b;
+
+$highlight-a: 1px #ffffff30;
+$highlight-a-top: 0px 1px $highlight-a;
+$highlight-a-bottom: 0px -1px $highlight-a;
+$highlight-a-left: 1px 0px $highlight-a;
+$highlight-a-right: -1px 0px $highlight-a;
+
+$highlight-b: 2px #ffffff50;
+$highlight-b-top: 0px 1px $highlight-b;
+$highlight-b-bottom: 0px -1px $highlight-b;
+$highlight-b-left: 1px 0px $highlight-b;
+$highlight-b-right: -1px 0px $highlight-b;
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: monospace;
+}
+
+body {
+  width: 100%;
+  height: 100vh;
+
+  display: flex;
+  flex-direction: column;
+
+  background: $bg-a;
+  color: $text-a;
+}
+
+i {
+  font-size: 1.5rem;
+}
+
+a {
+  text-decoration: none;
+}
+
+button {
+  transition: 0.2s;
+}
+
+ul {
+  list-style: none;
+}
