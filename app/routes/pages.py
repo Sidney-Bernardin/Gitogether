@@ -1,7 +1,9 @@
-from uuid import UUID
-import pygit2
-
 from typing import Any
+from uuid import UUID
+
+import pygit2
+import pygit2.enums
+
 from fastapi import APIRouter, HTTPException, Request, status
 
 from app.postgres import (
@@ -84,6 +86,7 @@ class RepositoryPage(Res):
     repo: RepositoryPageView | None = None
     repo_branches: list[str] | None = None
     commit_id: str | None = None
+    commits: list[pygit2.Commit] | None = None
     file: Any
 
 
@@ -126,6 +129,9 @@ async def get_repo(
             repo = pygit2.Repository(Config.repositories_path / username / reponame)
             res.repo_branches = [branch for branch in repo.branches]
             res.commit_id = commit_id or repo.head.shorthand
+            commit = repo.revparse_single(res.commit_id)
+            res.commits = [c for c in repo.walk(commit.id, pygit2.enums.SortMode.TOPOLOGICAL)]
+            [print(c.short_id) for c in repo.walk(commit.id, pygit2.enums.SortMode.TOPOLOGICAL)]
             res.file = repo.revparse_single(f"{res.commit_id}:{path}")
         except KeyError:
             pass

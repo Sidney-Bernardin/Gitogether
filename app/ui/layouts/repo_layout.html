@@ -10,7 +10,7 @@
     {% if not repo %}
         <p>Repo not found.</p>
     {% else %}
-        <div class="side-bar">
+        <div class="repo-side-bar">
             <div class="head">
                 <a href="{{ url_for("user_page", username=username) }}">/{{ username }}</a>
                 <a href="{{ url_for("repository_code_page", username=username, reponame=repo.reponame) }}">/{{ repo.reponame }}</a>
@@ -40,20 +40,5 @@
                 </li>
             </ul>
         </div>
-
-        <div class="branches">
-            <p>branch: <strong>{{ commit_id }}</strong></p>
-            <ul>
-                {% for branch in repo_branches %}
-                    <li>
-                        <a href="{{ url_for("repository_code_page", username=username, reponame=repo.reponame, commit_id=branch) }}">
-                            {{ branch }}
-                        </a>
-                    </li>
-                {% endfor %}
-            </ul>
-        </div>
-
-        {% block repo_content %}{% endblock %}
     {% endif %}
 {% endblock %}

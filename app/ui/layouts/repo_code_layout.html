@@ -1,0 +1,47 @@
+{% extends "layouts/repo_layout.html" %}
+
+{% block title %}{{ repo.reponame }}{% endblock %}
+
+{% block head %}
+    {{ super() }}
+    <link rel="stylesheet" href="{{ url_for("static", path="layouts/repo_code_layout.css") }}">
+{% endblock %}
+
+{% block content %}
+    {{ super() }}
+    {% if not repo %}
+        <p>Repo not found.</p>
+    {% else %}
+        <div class="branches-side-bar">
+            <div>
+                <h1>branches</h1>
+                <ul class="branches">
+                    {% for branch in repo_branches %}
+                        <li>
+                            <a href="{{ url_for("repository_code_page", username=username, reponame=repo.reponame, commit_id=branch) }}">
+                                {{ branch }}
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <div>
+                <h1>commits</h1>
+                <ul class="commits">
+                    {% for c in commits %}
+                        <li>
+                            <a href="{{ url_for("repository_code_page", username=username, reponame=repo.reponame, commit_id=c.id) }}">
+                                <div>
+                                    <p class="message">{{c.message}}</p>
+                                    <p class="name">{{ c.author.name}}</p>
+                                </div>
+                                <p class="id">{{ c.short_id }}</p>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}

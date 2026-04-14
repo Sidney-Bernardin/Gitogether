@@ -4,7 +4,9 @@
   display: flex;
 }
 
-.side-bar {
+.repo-side-bar {
+  z-index: 0;
+
   display: flex;
   gap: 2rem;
   flex-direction: column;
@@ -12,7 +14,7 @@
   padding: 2rem 0;
 
   background: $bg-b;
-  box-shadow: $shadow-a-left;
+  box-shadow: $shadow-b-left;
 
   .head {
     display: flex;
@@ -23,19 +25,15 @@
 
       &:nth-child(1) {
         color: $text-a;
-        font-size: 1.5rem;
-        font-weight: 600;
       }
 
       &:nth-child(2) {
         color: $text-a;
         font-size: 2rem;
-        font-weight: 900;
-        padding-left: 3.5rem;
+        font-weight: bold;
       }
 
       &:nth-child(3) {
-        margin-top: 0.75rem;
         color: $text-b;
       }
 
