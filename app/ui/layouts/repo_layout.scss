@@ -2,6 +2,7 @@
 
 .content {
   display: flex;
+  min-height: 0;
 }
 
 .repo-side-bar {
@@ -48,36 +49,31 @@
     flex-direction: column;
 
     li {
-      border-top-right-radius: 1rem;
-      border-bottom-right-radius: 1rem;
-      padding: 1rem 1.5rem;
+      display: flex;
+      flex-direction: column;
 
-      font-size: 2rem;
-      text-transform: capitalize;
+      a {
+        border-top-right-radius: 1rem;
+        border-bottom-right-radius: 1rem;
+        padding: 1rem 1.5rem;
 
-      transition: 0.1s;
+        color: $text-b;
+        font-size: 2rem;
+        text-transform: capitalize;
+      }
 
-      &.active {
+      &.active a {
         z-index: 1;
+
+        color: $text-a;
         background: $bg-c;
         font-weight: bold;
         box-shadow: inset $highlight-a-top, $shadow-a-bottom;
-
-        a {
-          color: $text-a;
-        }
       }
 
-      &:hover {
+      &:hover a {
         background: $bg-c;
-
-        a {
-          color: $text-a;
-        }
-      }
-
-      a {
-        color: $text-b;
+        color: $text-a;
       }
     }
   }

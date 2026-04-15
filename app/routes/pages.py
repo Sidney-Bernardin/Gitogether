@@ -131,7 +131,6 @@ async def get_repo(
             res.commit_id = commit_id or repo.head.shorthand
             commit = repo.revparse_single(res.commit_id)
             res.commits = [c for c in repo.walk(commit.id, pygit2.enums.SortMode.TOPOLOGICAL)]
-            [print(c.short_id) for c in repo.walk(commit.id, pygit2.enums.SortMode.TOPOLOGICAL)]
             res.file = repo.revparse_single(f"{res.commit_id}:{path}")
         except KeyError:
             pass
