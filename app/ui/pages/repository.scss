@@ -1,0 +1,85 @@
+@use "../global" as *;
+
+.blob-wrapper {
+  padding: 2rem 0;
+  width: 100%;
+
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+
+  .blob {
+    display: flex;
+    flex-direction: column;
+
+    border-top-left-radius: 1rem;
+    border-top-right-radius: 1rem;
+    width: 80rem;
+
+    background: $bg-b;
+    box-shadow: $shadow-a-bottom;
+
+    // pre {
+    //   flex: 1;
+    //
+    //   code.hljs {
+    //     border-radius: 1rem !important;
+    //     height: 100%;
+    //
+    //     background: $bg-a !important;
+    //     box-shadow: inset $highlight-b-bottom, inset $shadow-b-top !important;
+    //   }
+    // }
+
+    .head {
+      z-index: 1;
+
+      border-top-left-radius: 1rem;
+      border-top-right-radius: 1rem;
+      padding: 1rem;
+
+      background: $bg-c;
+      box-shadow: inset $highlight-b-top, $shadow-b-bottom;
+    }
+
+    ul {
+      display: flex;
+      flex-direction: column;
+
+      li {
+        padding: 0.5rem 1rem;
+
+
+        &:hover {
+          background: $bg-c;
+        }
+
+        a {
+          color: $text-b;
+
+          &:hover {
+            text-decoration: underline;
+          }
+        }
+      }
+    }
+
+    .code {
+      flex: 1;
+
+      border-bottom-left-radius: 1rem;
+      border-bottom-right-radius: 1rem;
+      padding: 1rem 1rem;
+
+      overflow: auto;
+      scrollbar-color: $bg-c transparent;
+      white-space: pre;
+
+      background: transparent;
+    }
+  }
+}
+
+.hljs-ln-code {
+  padding-left: 1rem !important;
+}

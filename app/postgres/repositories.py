@@ -214,3 +214,28 @@ class RepositoryPageView:
             username,
             reponame,
         )
+
+    @classmethod
+    async def select_by_parent_id(cls, c: Connection, parent_id: UUID) -> list[Self]:
+        return await fetchrows(
+            c,
+            cls,
+            """
+            SELECT
+                r.repository_id, r.reponame, r.stars, r.private,
+
+                r.owner_id,
+                u.username AS owner_username,
+
+                r.parent_id,
+                pr.reponame AS parent_reponame,
+                pu.username AS parent_owner_username
+            FROM repositories r
+            LEFT JOIN users u ON u.user_id = r.owner_id
+            LEFT JOIN repositories pr ON r.parent_id = pr.repository_id
+            LEFT JOIN users pu ON pu.user_id = pr.owner_id
+            WHERE
+                r.parent_id = $1
+            """,
+            parent_id,
+        )

@@ -1,4 +1,4 @@
-@use "../main" as *;
+@use "../global" as *;
 
 .content {
   display: flex;
@@ -8,11 +8,11 @@
 .repo-side-bar {
   z-index: 0;
 
+  padding: 2rem 0;
+
   display: flex;
   gap: 2rem;
   flex-direction: column;
-
-  padding: 2rem 0;
 
   background: $bg-b;
   box-shadow: $shadow-b-left;
@@ -42,6 +42,14 @@
         text-decoration: underline;
       }
     }
+
+    .fork-btn {
+      border: none;
+      border-radius: 1rem;
+
+      color: $text-b;
+      background: $bg-c;
+    }
   }
 
   ul {
@@ -60,6 +68,7 @@
         color: $text-b;
         font-size: 2rem;
         text-transform: capitalize;
+        text-wrap: nowrap;
       }
 
       &.active a {

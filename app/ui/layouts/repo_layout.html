@@ -23,18 +23,27 @@
             </div>
 
             <ul>
-                <li class="active">
+                <li class="{{ 'active' if request.scope.get("route").name == 'repository_code_page' }}">
                     <a href="{{ url_for("repository_code_page", username=username, reponame=repo.reponame) }}">
+                        <i class="fa-solid fa-code"></i>
                         code
                     </a>
                 </li>
-                <li>
+                <li class="{{ 'active' if request.scope.get("route").name == 'repository_pull_requests_page' }}">
                     <a href="{{ url_for("repository_code_page", username=username, reponame=repo.reponame) }}">
+                        <i class="fa-solid fa-code-pull-request"></i>
                         pull requests
                     </a>
                 </li>
-                <li>
+                <li class="{{ 'active' if request.scope.get("route").name == 'repository_forks_page' }}">
+                    <a href="{{ url_for("repository_forks_page", username=username, reponame=repo.reponame) }}">
+                        <i class="fa-solid fa-code-fork"></i>
+                        forks
+                    </a>
+                </li>
+                <li class="{{ 'active' if request.scope.get("route").name == 'repository_settings_page' }}">
                     <a href="{{ url_for("repository_code_page", username=username, reponame=repo.reponame) }}">
+                        <i class="fa-solid fa-gear"></i>
                         settings
                     </a>
                 </li>

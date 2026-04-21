@@ -1,5 +1,16 @@
 import "htmx.org";
 
+import hljs from "highlight.js";
+window.hljs = hljs;
+import "highlight.js/styles/github-dark.css";
+import("highlightjs-line-numbers.js").then(() => {
+  console.log(window.hljs.initLineNumbersOnLoad());
+  document.querySelectorAll(".code").forEach((block) => {
+    hljs.highlightElement(block);
+    hljs.lineNumbersBlock(block);
+  });
+});
+
 document.body.addEventListener("htmx:responseError", (e) => {
   alert(e.detail.xhr.responseText);
 });

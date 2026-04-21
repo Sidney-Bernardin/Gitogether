@@ -35,46 +35,11 @@
                         {% for c in commits %}
                             <li>
                                 <a href="{{ url_for("repository_code_page", username=username, reponame=repo.reponame, commit_id=c.id) }}">
-                                    <div>
-                                        <p class="message">{{c.message}}</p>
+                                    <p class="message">{{c.message}}</p>
+                                    <div class="info">
                                         <p class="name">{{ c.author.name}}</p>
+                                        <p class="id">{{ c.short_id }}</p>
                                     </div>
-                                    <p class="id">{{ c.short_id }}</p>
-                                </a>
-                                <a href="{{ url_for("repository_code_page", username=username, reponame=repo.reponame, commit_id=c.id) }}">
-                                    <div>
-                                        <p class="message">{{c.message}}</p>
-                                        <p class="name">{{ c.author.name}}</p>
-                                    </div>
-                                    <p class="id">{{ c.short_id }}</p>
-                                </a>
-                                <a href="{{ url_for("repository_code_page", username=username, reponame=repo.reponame, commit_id=c.id) }}">
-                                    <div>
-                                        <p class="message">{{c.message}}</p>
-                                        <p class="name">{{ c.author.name}}</p>
-                                    </div>
-                                    <p class="id">{{ c.short_id }}</p>
-                                </a>
-                                <a href="{{ url_for("repository_code_page", username=username, reponame=repo.reponame, commit_id=c.id) }}">
-                                    <div>
-                                        <p class="message">{{c.message}}</p>
-                                        <p class="name">{{ c.author.name}}</p>
-                                    </div>
-                                    <p class="id">{{ c.short_id }}</p>
-                                </a>
-                                <a href="{{ url_for("repository_code_page", username=username, reponame=repo.reponame, commit_id=c.id) }}">
-                                    <div>
-                                        <p class="message">{{c.message}}</p>
-                                        <p class="name">{{ c.author.name}}</p>
-                                    </div>
-                                    <p class="id">{{ c.short_id }}</p>
-                                </a>
-                                <a href="{{ url_for("repository_code_page", username=username, reponame=repo.reponame, commit_id=c.id) }}">
-                                    <div>
-                                        <p class="message">{{c.message}}</p>
-                                        <p class="name">{{ c.author.name}}</p>
-                                    </div>
-                                    <p class="id">{{ c.short_id }}</p>
                                 </a>
                             </li>
                         {% endfor %}

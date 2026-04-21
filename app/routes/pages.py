@@ -82,6 +82,7 @@ async def user_page(req: Request, session: SessionAuth, username: UsernamePathPa
 class RepositoryPage(Res):
     session: Session | None
     username: str
+    file_path: str
     file_path_sufix: str
     repo: RepositoryPageView | None = None
     repo_branches: list[str] | None = None
@@ -104,6 +105,7 @@ async def get_repo(
     res = RepositoryPage(req, "pages/repository.html")
     res.session = session
     res.username = username
+    res.file_path = path
     res.file_path_sufix = f"{path}/" if path else ""
 
     try:
@@ -127,7 +129,7 @@ async def get_repo(
 
         try:
             repo = pygit2.Repository(Config.repositories_path / username / reponame)
-            res.repo_branches = [branch for branch in repo.branches]
+            res.repo_branches = [branch for branch in repo.branches.local]
             res.commit_id = commit_id or repo.head.shorthand
             commit = repo.revparse_single(res.commit_id)
             res.commits = [c for c in repo.walk(commit.id, pygit2.enums.SortMode.TOPOLOGICAL)]
@@ -250,5 +252,35 @@ async def pull_request_page(
 
     diff = index.diff_to_tree(repo.head.peel(pygit2.Tree))
     res.diff = "".join(([p.text for p in diff]))
+
+    return res()
+
+
+class ForksPage(Res):
+    session: Session | None
+    username: str
+    repo: RepositoryPageView | None = None
+    forks: list[RepositoryPageView] | None = None
+
+
+@router.get("/{username}/{reponame}/forks", name="repository_forks_page")
+async def forks_page(
+    req: Request,
+    session: SessionAuth,
+    username: UsernamePathParam,
+    reponame: ReponamePathParam,
+):
+    res = ForksPage(req, "pages/forks.html")
+    res.session = session
+    res.username = username
+
+    async with acquire() as conn:
+        conn: Connection
+
+        res.repo = await RepositoryPageView.select_by_names(conn, username, reponame)
+        if not res.repo:
+            return res()
+
+        res.forks = await RepositoryPageView.select_by_parent_id(conn, res.repo.repository_id)
 
     return res()
