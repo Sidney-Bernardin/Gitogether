@@ -11,8 +11,10 @@ class Repository:
     repository_id: UUID
 
     reponame: str
+    description: str
     private: bool
     stars: int
+    tags: list[str]
 
     owner_id: UUID
     parent_id: UUID | None
@@ -22,13 +24,14 @@ class Repository:
             """
             INSERT INTO repositories (
                 repository_id,
-                reponame, private, stars,
+                reponame, description, private, stars, tags,
                 owner_id, parent_id
             )
-            VALUES ($1, $2, $3, $4, $5, $6)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
             """,
             self.repository_id,
             self.reponame,
+            self.description,
             self.private,
             self.stars,
             self.owner_id,
@@ -89,7 +92,15 @@ class Repository:
             c,
             cls,
             """
-            SELECT repository_id, reponame, private, stars, parent_id, owner_id 
+            SELECT
+                repository_id,
+                reponame,
+                description,
+                private,
+                stars,
+                tags,
+                parent_id,
+                owner_id
             FROM repositories r
             WHERE
                 r.reponame = $2 AND
@@ -113,7 +124,7 @@ class Repository:
             c,
             cls,
             """
-            SELECT repository_id, reponame, private, stars, parent_id, owner_id
+            SELECT repository_id, reponame, description, private, stars, parent_id, owner_id
             FROM repositories
             WHERE
                 owner_id = $1 AND
@@ -153,8 +164,11 @@ class RepositoryPageView:
     repository_id: UUID
 
     reponame: str
+    description: str
     private: bool
     stars: int
+    tags: list[str]
+    forks: int
 
     owner_id: UUID
     owner_username: str
@@ -170,7 +184,8 @@ class RepositoryPageView:
             cls,
             """
             SELECT
-                r.repository_id, r.reponame, r.stars, r.private,
+                r.repository_id, r.reponame, r.description, r.stars, r.private, r.tags,
+                (SELECT COUNT(*) FROM repositories WHERE parent_id = r.repository_id) AS forks,
 
                 r.owner_id,
                 u.username AS owner_username,
@@ -195,7 +210,8 @@ class RepositoryPageView:
             cls,
             """
             SELECT
-                r.repository_id, r.reponame, r.stars, r.private,
+                r.repository_id, r.reponame, r.description, r.stars, r.private, r.tags,
+                (SELECT COUNT(*) FROM repositories WHERE parent_id = r.repository_id) AS forks,
 
                 r.owner_id,
                 u.username AS owner_username,
@@ -222,7 +238,8 @@ class RepositoryPageView:
             cls,
             """
             SELECT
-                r.repository_id, r.reponame, r.stars, r.private,
+                r.repository_id, r.reponame, r.description, r.stars, r.private, r.tags,
+                (SELECT COUNT(*) FROM repositories WHERE parent_id = r.repository_id) AS forks,
 
                 r.owner_id,
                 u.username AS owner_username,

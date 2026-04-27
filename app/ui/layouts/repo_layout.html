@@ -7,9 +7,7 @@
 {% endblock %}
 
 {% block content %}
-    {% if not repo %}
-        <p>Repo not found.</p>
-    {% else %}
+    {% if repo %}
         <div class="repo-side-bar">
             <div class="head">
                 <a href="{{ url_for("user_page", username=username) }}">/{{ username }}</a>
@@ -20,7 +18,14 @@
                         Fork of: {{ repo.parent_owner_username }}/{{ repo.parent_reponame }}
                     </a>
                 {% endif %}
+
+                <hr>
+
+                <p class="description">{{repo.description}}</p>
+                
+                stars: {{ repo.stars }}
             </div>
+
 
             <ul>
                 <li class="{{ 'active' if request.scope.get("route").name == 'repository_code_page' }}">

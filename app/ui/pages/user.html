@@ -2,17 +2,44 @@
 
 {% block title %}{{ user.username }}{% endblock %}
 
+{% block head %}
+  {{ super() }}
+  <link rel="stylesheet" href="{{ url_for("static", path="pages/user.css") }}">
+{% endblock %}
+
 {% block content %}
 <h1>{{ user.username }}</h1>
 
 {% if is_owner %}
-<h2>Create Repository</h2>
-<form id="create" hx-post="/gitogether/repositories/" hx-swap="none">
+<form
+    x-data="{ tags: [] }"
+    id="create"
+    hx-post="/gitogether/repositories/"
+    hx-swap="none"
+>
+    <h2>Create Repository</h2>
+
     <label for="reponame">Name</label>
     <input type="text" name="reponame" placeholder="Name">
 
+    <label for="description">Description</label>
+    <input type="text" name="description" placeholder="Description">
+
     <label for="private">Private</label>
     <input type="checkbox" name="private">
+
+    <template x-for="(tag, i) in tags" :key="i">
+        <div class="tag" @click="$el.remove()">
+            <input type="hidden" name="tags" :value="tag">
+            <span x-text="tag"></span>
+        </div>
+    </template>
+    <input
+      type="text"
+      placeholder="Add Tag"
+      @focusout="$event.target.value !== '' && $data.tags.push($event.target.value) && ($event.target.value = '')"
+      @keydown.enter.prevent="$event.target.value !== '' && $data.tags.push($event.target.value) && ($event.target.value = '')"
+    >
 
     <input type="submit">
 </form>

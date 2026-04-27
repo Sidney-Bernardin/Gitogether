@@ -28,6 +28,7 @@
                     <a href="{{ url_for('repository_code_page', username=fork.owner_username, reponame=fork.reponame) }}">
                         {{ fork.owner_username }}/{{ fork.reponame }} (public)
                     </a>
+                    {{ fork.forks }}
                     <p>Lorem ipsum dolor, sit amet consectetur adipisicing elit. Praesentium amet, obcaecati alias ea delectus dolor blanditiis nostrum voluptatem nam libero! Odit id eveniet velit suscipit provident sunt deleniti reprehenderit beatae!</p>
                 </li>
                 <li>

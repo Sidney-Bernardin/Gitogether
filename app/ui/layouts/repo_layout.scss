@@ -9,6 +9,7 @@
   z-index: 0;
 
   padding: 2rem 0;
+  width: 35rem;
 
   display: flex;
   gap: 2rem;
@@ -18,12 +19,12 @@
   box-shadow: $shadow-b-left;
 
   .head {
+    margin: 0 2rem;
+
     display: flex;
     flex-direction: column;
 
     a {
-      padding: 0 2rem;
-
       &:nth-child(1) {
         color: $text-a;
       }
@@ -43,12 +44,13 @@
       }
     }
 
-    .fork-btn {
-      border: none;
-      border-radius: 1rem;
+    hr {
+      margin-bottom: 1rem;
+    }
 
+    .description {
+      margin-bottom: 1rem;
       color: $text-b;
-      background: $bg-c;
     }
   }
 

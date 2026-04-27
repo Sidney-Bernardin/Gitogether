@@ -1,10 +1,14 @@
 import "htmx.org";
 
+import Alpine from "alpinejs";
+window.Alpine = Alpine;
+Alpine.start();
+
 import hljs from "highlight.js";
 window.hljs = hljs;
 import "highlight.js/styles/github-dark.css";
 import("highlightjs-line-numbers.js").then(() => {
-  console.log(window.hljs.initLineNumbersOnLoad());
+  window.hljs.initLineNumbersOnLoad();
   document.querySelectorAll(".code").forEach((block) => {
     hljs.highlightElement(block);
     hljs.lineNumbersBlock(block);

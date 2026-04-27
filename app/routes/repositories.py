@@ -2,7 +2,7 @@ import pygit2
 
 from typing import Annotated
 from uuid import UUID, uuid4
-from asyncpg import Connection, ForeignKeyViolationError
+from asyncpg import Connection
 
 from pydantic import BaseModel, Field
 from pydantic_core import PydanticCustomError
@@ -18,7 +18,9 @@ router = APIRouter(prefix="/repositories")
 
 class CreateReposiotryForm(BaseModel):
     reponame: str = Field(min_length=1, max_length=50, pattern=reponame_regex)
+    description: str = Field(max_length=150)
     private: bool = Field(default=False)
+    tags: list[str] = Field(default_factory=list)
 
 
 @router.post("/")
@@ -44,8 +46,10 @@ async def create_repo(
             repo = Repository(
                 repository_id=uuid4(),
                 reponame=form.reponame,
+                description=form.description,
                 private=form.private,
                 stars=0,
+                tags=form.tags,
                 owner_id=session.user_id,
                 parent_id=None,
             )

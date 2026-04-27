@@ -9,8 +9,13 @@ CREATE TABLE repositories (
     repository_id uuid PRIMARY KEY,
 
     reponame text NOT NULL,
+    description text NOT NULL,
     private boolean NOT NULL,
     stars int NOT NULL,
+    tags text[] NOT NULL,
+
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
 
     parent_id uuid REFERENCES repositories(repository_id),
     owner_id uuid NOT NULL REFERENCES users(user_id)
@@ -24,6 +29,9 @@ CREATE TABLE pull_requests (
 
     source_branch text NOT NULL,
     target_branch text NOT NULL,
+
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
 
     source_id uuid REFERENCES repositories(repository_id),
     target_id uuid NOT NULL REFERENCES repositories(repository_id)

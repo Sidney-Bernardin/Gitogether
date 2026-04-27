@@ -9,9 +9,7 @@
 
 {% block content %}
     {{ super() }}
-    {% if not repo %}
-        <p>Repo not found.</p>
-    {% else %}
+    {% if repo %}
         <div class="branches-side-bar">
             <section class="branches">
                 <h2>branches</h2>
