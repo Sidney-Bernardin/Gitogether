@@ -1,4 +1,5 @@
 from typing import Self
+from datetime import datetime
 from pydantic.dataclasses import dataclass
 from uuid import UUID
 from asyncpg import Connection
@@ -16,6 +17,9 @@ class Repository:
     stars: int
     tags: list[str]
 
+    created_at: datetime
+    updated_at: datetime
+
     owner_id: UUID
     parent_id: UUID | None
 
@@ -25,15 +29,19 @@ class Repository:
             INSERT INTO repositories (
                 repository_id,
                 reponame, description, private, stars, tags,
+                created_at, updated_at,
                 owner_id, parent_id
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
             """,
             self.repository_id,
             self.reponame,
             self.description,
             self.private,
             self.stars,
+            self.tags,
+            self.created_at,
+            self.updated_at,
             self.owner_id,
             self.parent_id,
         )

@@ -1,3 +1,4 @@
+from datetime import datetime
 import pygit2
 
 from typing import Annotated
@@ -50,6 +51,8 @@ async def create_repo(
                 private=form.private,
                 stars=0,
                 tags=form.tags,
+                created_at=datetime.now(),
+                updated_at=datetime.now(),
                 owner_id=session.user_id,
                 parent_id=None,
             )
@@ -105,8 +108,12 @@ async def fork_repository(
             repo = Repository(
                 repository_id=uuid4(),
                 reponame=form.reponame,
+                description=source_repo.description,
                 private=False,
                 stars=0,
+                tags=source_repo.tags,
+                created_at=datetime.now(),
+                updated_at=datetime.now(),
                 owner_id=session.user_id,
                 parent_id=UUID(repository_id),
             )

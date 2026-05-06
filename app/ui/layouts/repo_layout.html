@@ -21,8 +21,13 @@
 
                 <hr>
 
-                <p class="description">{{repo.description}}</p>
-                
+                <p class="description">{{ repo.description }}</p>
+                <div class="tags">
+                    {% for tag in repo.tags %}
+                        <span>{{ tag }}</span>
+                    {% endfor %}
+                </div>
+
                 stars: {{ repo.stars }}
             </div>
 

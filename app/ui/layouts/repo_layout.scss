@@ -52,6 +52,21 @@
       margin-bottom: 1rem;
       color: $text-b;
     }
+
+    .tags {
+      margin-bottom: 1rem;
+
+      display: flex;
+      gap: 0.5rem;
+
+      span {
+        border-radius: 0.5rem;
+        padding: 0.25rem 0.5rem;
+
+        background: $blue-a;
+        color: $blue-z;
+      }
+    }
   }
 
   ul {
