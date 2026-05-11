@@ -1,4 +1,5 @@
-import "htmx.org";
+import htmx from "htmx.org";
+window.htmx = htmx;
 
 import Alpine from "alpinejs";
 window.Alpine = Alpine;
@@ -7,6 +8,7 @@ Alpine.start();
 import hljs from "highlight.js";
 window.hljs = hljs;
 import "highlight.js/styles/github-dark.css";
+import htmx from "htmx.org";
 import("highlightjs-line-numbers.js").then(() => {
   window.hljs.initLineNumbersOnLoad();
   document.querySelectorAll(".code").forEach((block) => {

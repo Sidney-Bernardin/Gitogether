@@ -4,7 +4,7 @@ from uuid import UUID
 import pygit2
 import pygit2.enums
 
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, HTTPException, Request, Response, status
 
 from app.postgres import (
     Connection,
@@ -151,6 +151,54 @@ async def get_repo(
         raise err
 
 
+class PullRequestsPage(Res):
+    session: Session | None
+    username: str
+    repo: RepositoryPageView | None = None
+    repo_branches: list[str] = []
+    pull_requests: list[PullRequest] = []
+    source_repos: list[RepositoryPageView] = []
+
+
+@router.get("/{username}/{reponame}/pull-requests", name="repository_pull_requests_page")
+async def pull_requests_page(
+    req: Request,
+    response: Response,
+    session: SessionAuth,
+    username: UsernamePathParam,
+    reponame: ReponamePathParam,
+):
+    if not session:
+        response.headers["HX-Redirect"] = "/signin"
+        return
+
+    res = PullRequestsPage(req, "pages/pull_requests.html")
+    res.session = session
+    res.username = username
+
+    async with acquire() as conn:
+        conn: Connection
+
+        res.repo = await RepositoryPageView.select_by_names(conn, username, reponame)
+        if not res.repo:
+            return res()
+
+        respository = pygit2.Repository(Config.repositories_path / username / reponame)
+        res.repo_branches = [b for b in respository.branches]
+
+        res.pull_requests = await PullRequest.select_by_target_id(conn, res.repo.repository_id)
+
+        res.source_repos = [
+            *await RepositoryPageView.select_by_parent_and_user_id(
+                conn,
+                res.repo.repository_id,
+                session.user_id,
+            ),
+        ]
+
+    return res()
+
+
 class CreatePullRequestPage(Res):
     session: Session | None
     username: str
@@ -212,7 +260,10 @@ class PullRequestPage(Res):
     diff: pygit2.Diff | None = None
 
 
-@router.get("/{username}/{reponame}/pull-requests/{pull_request_id}", name="pull_request_page")
+@router.get(
+    "/{username}/{reponame}/pull-requests/{pull_request_id}",
+    name="repository_pull_request_page",
+)
 async def pull_request_page(
     req: Request,
     session: SessionAuth,

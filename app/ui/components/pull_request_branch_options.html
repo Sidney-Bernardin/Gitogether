@@ -1,0 +1,5 @@
+<div hx-swap-oob="innerHTML:select[name='source_branch']">
+    {% for branch in branches %}
+        <option value="{{ branch }}">{{ branch }}</option>
+    {% endfor %}
+</div>

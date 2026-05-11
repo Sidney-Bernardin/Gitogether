@@ -1,9 +1,10 @@
+from datetime import datetime
 from typing import Self
 from pydantic.dataclasses import dataclass
 from uuid import UUID
 from asyncpg import Connection
 
-from .postgres import fetchrow
+from .postgres import fetchrow, fetchrows
 
 
 @dataclass
@@ -15,7 +16,10 @@ class PullRequest:
     source_branch: str
     target_branch: str
 
-    source_id: UUID
+    created_at: datetime
+    updated_at: datetime
+
+    source_id: UUID | None
     target_id: UUID
 
     async def insert(self, c: Connection) -> str:
@@ -46,9 +50,27 @@ class PullRequest:
             SELECT
                 pull_request_id,
                 title, description, source_branch, target_branch,
+                created_at, updated_at,
                 source_id, target_id
             FROM pull_requests
             WHERE pull_request_id = $1
             """,
             pull_request_id,
+        )
+
+    @classmethod
+    async def select_by_target_id(cls, c: Connection, target_id: UUID) -> list[Self]:
+        return await fetchrows(
+            c,
+            PullRequest,
+            """
+            SELECT
+                pull_request_id,
+                title, description, source_branch, target_branch,
+                created_at, updated_at,
+                source_id, target_id
+            FROM pull_requests
+            WHERE target_id = $1
+            """,
+            target_id,
         )

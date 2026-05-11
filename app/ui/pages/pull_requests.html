@@ -1,0 +1,105 @@
+{% extends "layouts/repo_layout.html" %}
+
+{% block title %}{{ repo.reponame }}{% endblock %}
+
+{% block head %}
+    {{ super() }}
+    <link rel="stylesheet" href="{{ url_for("static", path="main.css") }}">
+    <link rel="stylesheet" href="{{ url_for("static", path="pages/pull_requests.css") }}">
+{% endblock %}
+
+{% block content %}
+    {{ super() }}
+
+    <div class="wrapper">
+        <form
+            x-data
+            id="pull_request"
+            hx-patch="{{ url_for('create_pull_request', target_repo_id=repo.repository_id) }}",
+            hx-swap="none"
+        >
+            <h1>Create Pull-Request</h1>
+
+            <label for="title">Title</label>
+            <input type="text" name="title" placeholder="Title">
+
+            <label for="description">Description</label>
+            <input type="text" name="description" placeholder="Description">
+
+            <label for="source">Source Repository</label>
+            <select
+                name="source_repo_id"
+                @change="window.htmx.ajax('GET', `/gitogether/repositories/${$el.value}/branches`, {swap: 'none'})"
+            >
+                <option value="">{{ repo.owner_username }}/{{ repo.reponame }}</option>
+                {% for source_repo in source_repos %}
+                    <option value="{{ source_repo.repository_id }}">
+                        {{ source_repo.owner_username }}/{{ source_repo.reponame }}
+                    </option>
+                {% endfor %}
+            </select>
+
+            <label for="source">Source Branch</label>
+            <select id="source_branch_select" name="source_branch">
+                {% for branch in repo_branches %}
+                    <option value="{{ branch }}">{{ branch }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="target">Target Branch</label>
+            <input type="text" name="target_branch" placeholder="Target Branch">
+
+            <input type="submit" name="submit" value="Create Pull-Request">
+        </form>
+
+        <ul class="forks">
+            {% for fork in forks %}
+                <li>
+                    <a href="{{ url_for('repository_code_page', username=fork.owner_username, reponame=fork.reponame) }}">
+                        {{ fork.owner_username }}/{{ fork.reponame }} (public)
+                    </a>
+                    {{ fork.forks }}
+                    <p>Lorem ipsum dolor, sit amet consectetur adipisicing elit. Praesentium amet, obcaecati alias ea delectus dolor blanditiis nostrum voluptatem nam libero! Odit id eveniet velit suscipit provident sunt deleniti reprehenderit beatae!</p>
+                </li>
+                <li>
+                    <a href="{{ url_for('repository_code_page', username=fork.owner_username, reponame=fork.reponame) }}">
+                        {{ fork.owner_username }}/{{ fork.reponame }} (public)
+                    </a>
+                    <p>Lorem ipsum dolor, sit amet consectetur adipisicing elit. Praesentium amet, obcaecati alias ea delectus dolor blanditiis nostrum voluptatem nam libero! Odit id eveniet velit suscipit provident sunt deleniti reprehenderit beatae!</p>
+                </li>
+                <li>
+                    <a href="{{ url_for('repository_code_page', username=fork.owner_username, reponame=fork.reponame) }}">
+                        {{ fork.owner_username }}/{{ fork.reponame }} (public)
+                    </a>
+                    <p>Lorem ipsum dolor, sit amet consectetur adipisicing elit. Praesentium amet, obcaecati alias ea delectus dolor blanditiis nostrum voluptatem nam libero! Odit id eveniet velit suscipit provident sunt deleniti reprehenderit beatae!</p>
+                </li>
+                <li>
+                    <a href="{{ url_for('repository_code_page', username=fork.owner_username, reponame=fork.reponame) }}">
+                        {{ fork.owner_username }}/{{ fork.reponame }} (public)
+                    </a>
+                    <p>Lorem ipsum dolor, sit amet consectetur adipisicing elit. Praesentium amet, obcaecati alias ea delectus dolor blanditiis nostrum voluptatem nam libero! Odit id eveniet velit suscipit provident sunt deleniti reprehenderit beatae!</p>
+                </li>
+                <li>
+                    <a href="{{ url_for('repository_code_page', username=fork.owner_username, reponame=fork.reponame) }}">
+                        {{ fork.owner_username }}/{{ fork.reponame }} (public)
+                    </a>
+                    <p>Lorem ipsum dolor, sit amet consectetur adipisicing elit. Praesentium amet, obcaecati alias ea delectus dolor blanditiis nostrum voluptatem nam libero! Odit id eveniet velit suscipit provident sunt deleniti reprehenderit beatae!</p>
+                </li>
+                <li>
+                    <a href="{{ url_for('repository_code_page', username=fork.owner_username, reponame=fork.reponame) }}">
+                        {{ fork.owner_username }}/{{ fork.reponame }} (public)
+                    </a>
+                    <p>Lorem ipsum dolor, sit amet consectetur adipisicing elit. Praesentium amet, obcaecati alias ea delectus dolor blanditiis nostrum voluptatem nam libero! Odit id eveniet velit suscipit provident sunt deleniti reprehenderit beatae!</p>
+                </li>
+                <li>
+                    <a href="{{ url_for('repository_code_page', username=fork.owner_username, reponame=fork.reponame) }}">
+                        {{ fork.owner_username }}/{{ fork.reponame }} (public)
+                    </a>
+                    <p>Lorem ipsum dolor, sit amet consectetur adipisicing elit. Praesentium amet, obcaecati alias ea delectus dolor blanditiis nostrum voluptatem nam libero! Odit id eveniet velit suscipit provident sunt deleniti reprehenderit beatae!</p>
+                </li>
+            {% else %}
+                <p>No forks found...</p>
+            {% endfor %}
+        </ul>
+    </div>
+{% endblock %}

@@ -102,13 +102,9 @@ class Repository:
             """
             SELECT
                 repository_id,
-                reponame,
-                description,
-                private,
-                stars,
-                tags,
-                parent_id,
-                owner_id
+                reponame, description, private, stars, tags,
+                created_at, updated_at,
+                parent_id, owner_id
             FROM repositories r
             WHERE
                 r.reponame = $2 AND
@@ -132,7 +128,11 @@ class Repository:
             c,
             cls,
             """
-            SELECT repository_id, reponame, description, private, stars, parent_id, owner_id
+            SELECT
+                repository_id,
+                reponame, description, private, stars, tags,
+                created_at, updated_at,
+                parent_id, owner_id
             FROM repositories
             WHERE
                 owner_id = $1 AND
@@ -153,7 +153,10 @@ class Repository:
             c,
             cls,
             """
-            SELECT repository_id, reponame, private, stars, parent_id, owner_id
+            SELECT
+                repository_id,
+                reponame, private, stars, tags,
+                parent_id, owner_id
             FROM repositories
             WHERE EXISTS (
                 SELECT FROM repository_contributors
@@ -263,4 +266,42 @@ class RepositoryPageView:
                 r.parent_id = $1
             """,
             parent_id,
+        )
+
+    @classmethod
+    async def select_by_parent_and_user_id(
+        cls,
+        c: Connection,
+        parent_id: UUID,
+        contributor_id: UUID,
+    ) -> list[Self]:
+        return await fetchrows(
+            c,
+            cls,
+            """
+            SELECT
+                r.repository_id, r.reponame, r.description, r.stars, r.private, r.tags,
+                (SELECT COUNT(*) FROM repositories WHERE parent_id = r.repository_id) AS forks,
+
+                r.owner_id,
+                u.username AS owner_username,
+
+                r.parent_id,
+                pr.reponame AS parent_reponame,
+                pu.username AS parent_owner_username
+            FROM repositories r
+            LEFT JOIN users u ON u.user_id = r.owner_id
+            LEFT JOIN repositories pr ON r.parent_id = pr.repository_id
+            LEFT JOIN users pu ON pu.user_id = pr.owner_id
+            WHERE
+                r.parent_id = $1
+                AND
+                    r.owner_id = $2
+                    OR EXISTS (
+                        SELECT FROM repository_contributors rc
+                        WHERE rc.user_id = $2
+                    )
+            """,
+            parent_id,
+            contributor_id,
         )

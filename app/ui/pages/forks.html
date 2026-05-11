@@ -3,24 +3,23 @@
 {% block title %}{{ repo.reponame }}{% endblock %}
 
 {% block head %}
-  {{ super() }}
-  <link rel="stylesheet" href="{{ url_for("static", path="main.css") }}">
-  <link rel="stylesheet" href="{{ url_for("static", path="pages/forks.css") }}">
+    {{ super() }}
+    <link rel="stylesheet" href="{{ url_for("static", path="main.css") }}">
+    <link rel="stylesheet" href="{{ url_for("static", path="pages/forks.css") }}">
 {% endblock %}
 
 {% block content %}
     {{ super() }}
 
     <div class="wrapper">
-        <div class="left">
-            <form id="fork" hx-patch="{{ url_for('fork_repository', repository_id=repo.repository_id) }}", hx-swap="none">
-                <h1>Create Fork</h1>
-                <label for="reponame">Fork name</label>
-                <input type="text" name="reponame" value="{{ repo.reponame }}-fork" placeholder="Fork name">
+        <form id="fork" hx-patch="{{ url_for('fork_repository', repository_id=repo.repository_id) }}", hx-swap="none">
+            <h1>Create Fork</h1>
 
-                <input type="submit" name="submit" value="Create Fork">
-            </form>
-        </div>
+            <label for="reponame">Fork name</label>
+            <input type="text" name="reponame" value="{{ repo.reponame }}-fork" placeholder="Fork name">
+
+            <input type="submit" name="submit" value="Create Fork">
+        </form>
 
         <ul class="forks">
             {% for fork in forks %}

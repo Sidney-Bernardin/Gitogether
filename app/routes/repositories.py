@@ -8,11 +8,11 @@ from asyncpg import Connection
 from pydantic import BaseModel, Field
 from pydantic_core import PydanticCustomError
 
-from fastapi import APIRouter, Form, HTTPException, Response, status
+from fastapi import APIRouter, Form, HTTPException, Request, Response, status
 from fastapi.exceptions import RequestValidationError
 
+from app.dependencies import Config, Res, SessionAuth, reponame_regex
 from app.postgres import Repository, RepositoryPageView, PullRequest, acquire
-from app.dependencies import Config, SessionAuth, reponame_regex
 
 router = APIRouter(prefix="/repositories")
 
@@ -132,6 +132,7 @@ async def fork_repository(
 class CreatePullRequestForm(BaseModel):
     title: str = Field(min_length=1, max_length=50)
     description: str = Field(min_length=1, max_length=1000)
+    source_repo_id: str | None = Field(default=None)
     source_branch: str = Field(min_length=1, max_length=1000)
     target_branch: str = Field(min_length=1, max_length=1000)
 
@@ -142,7 +143,6 @@ async def create_pull_request(
     session: SessionAuth,
     target_repo_id: str,
     form: Annotated[CreatePullRequestForm, Form()],
-    child: str | None = None,
 ):
     if not session:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
@@ -152,18 +152,20 @@ async def create_pull_request(
         async with conn.transaction():
 
             target_repo = await RepositoryPageView.select_by_id(conn, UUID(target_repo_id))
-            source_repo = await RepositoryPageView.select_by_id(conn, UUID(child))
+            source_repo = await RepositoryPageView.select_by_id(conn, UUID(form.source_repo_id))
 
-            if not target_repo or (child and not source_repo):
+            if not target_repo or (form.source_repo_id and not source_repo):
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
             pr = PullRequest(
                 pull_request_id=uuid4(),
                 title=form.title,
-                description="",
+                description=form.description,
                 source_branch=form.source_branch,
                 target_branch=form.target_branch,
-                source_id=UUID(child) if child else UUID(target_repo_id),
+                created_at=datetime.now(),
+                updated_at=datetime.now(),
+                source_id=UUID(form.source_repo_id) if form.source_repo_id else None,
                 target_id=UUID(target_repo_id),
             )
 
@@ -173,7 +175,7 @@ async def create_pull_request(
                 Config.repositories_path / target_repo.owner_username / target_repo.reponame
             )
 
-            if child and source_repo:
+            if source_repo:
                 repo.remotes.create(
                     str(pr.pull_request_id),
                     str(
@@ -184,3 +186,38 @@ async def create_pull_request(
     res.headers["HX-Redirect"] = (
         f"/{target_repo.owner_username}/{target_repo.reponame}/pull-requests/{pr.pull_request_id}"
     )
+
+
+class GetBranchesResponse(Res):
+    branches: list[str]
+
+
+@router.get("/{repository_id}/branches", name="get_branches")
+async def get_branches(
+    req: Request,
+    session: SessionAuth,
+    repository_id: str,
+):
+    if not session:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+
+    res = GetBranchesResponse(req, "components/pull_request_branch_options.html")
+
+    async with acquire() as conn:
+        conn: Connection
+
+        repo = await RepositoryPageView.select_by_id(conn, UUID(repository_id))
+        if not repo:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+        if repo.owner_id != session.user_id and not await Repository.has_contributor(
+            conn, repo.repository_id, session.user_id
+        ):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+
+        repository = pygit2.Repository(
+            Config.repositories_path / repo.owner_username / repo.reponame
+        )
+        res.branches = [b for b in repository.branches.local]
+
+    return res()
