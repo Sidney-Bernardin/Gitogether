@@ -116,12 +116,12 @@ async def fork_repository(
             await fork_repo.insert(conn)
 
             # Clone the repository with Git.
-            fork_repo = pygit2.clone_repository(
+            clone = pygit2.clone_repository(
                 str(Config.repositories_path / repo.owner_username / repo.reponame),  # old
                 str(Config.repositories_path / session.username / form.reponame),  # new
                 bare=True
             )
-            fork_repo.remotes.delete("origin")
+            clone.remotes.delete("origin")
 
     res.headers["HX-Redirect"] = f"/{session.username}/{fork_repo.reponame}"
 
