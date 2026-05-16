@@ -18,7 +18,7 @@ from app.config import Config
 templates = Jinja2Templates(os.path.join(os.path.dirname(__file__), "ui"))
 
 
-class Res:
+class TemplateData:
     request: Request
 
     def __init__(self, req: Request, template_name: str) -> None:

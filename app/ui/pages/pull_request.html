@@ -2,7 +2,10 @@
 
 {% block title %}{{pull_req.title}} | {{ super() }}{% endblock %}
 
-{% block repo_content %}
+{% block content %}
+{{ super() }}
+
+<div class="wrapper">
     <h1>{{ pull_req.title }}</h1>
     <p>
         {{ pull_req.source_branch }}
@@ -23,6 +26,7 @@
     {% endif %}
 
     <button>Merge</button>
+</div>
 {% endblock %}
 
 {% block style %}

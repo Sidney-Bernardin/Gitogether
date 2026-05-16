@@ -11,7 +11,7 @@ from pydantic_core import PydanticCustomError
 from fastapi import APIRouter, Form, HTTPException, Request, Response, status
 from fastapi.exceptions import RequestValidationError
 
-from app.dependencies import Config, Res, SessionAuth, reponame_regex
+from app.dependencies import Config, TemplateData, SessionAuth, reponame_regex
 from app.postgres import Repository, RepositoryPageView, PullRequest, acquire
 
 router = APIRouter(prefix="/repositories")
@@ -25,7 +25,7 @@ class CreateReposiotryForm(BaseModel):
 
 
 @router.post("/")
-async def create_repo(
+async def create_repository(
     res: Response,
     session: SessionAuth,
     form: Annotated[CreateReposiotryForm, Form()],
@@ -37,13 +37,11 @@ async def create_repo(
         conn: Connection
         async with conn.transaction():
 
-            if await Repository.is_names_taken(
-                conn, username=session.username, reponame=form.reponame
-            ):
-                raise RequestValidationError(
-                    [PydanticCustomError("reponame_taken", "Repository name taken.")]
-                )
+            # Ensure the repository's name isn't taken.
+            if await Repository.is_names_taken(conn, username=session.username, reponame=form.reponame):
+                raise RequestValidationError([PydanticCustomError("reponame_taken", "Repository name taken.")])
 
+            # Create the repository.
             repo = Repository(
                 repository_id=uuid4(),
                 reponame=form.reponame,
@@ -59,12 +57,12 @@ async def create_repo(
 
             await repo.insert(conn)
 
+            # Initialize the repository with Git.
             repo_path = Config.repositories_path / session.username / form.reponame
             pygit2.init_repository(
                 repo_path,
                 bare=True,
-                flags=pygit2.enums.RepositoryInitFlag.MKPATH
-                | pygit2.enums.RepositoryInitFlag.NO_REINIT,
+                flags=pygit2.enums.RepositoryInitFlag.MKPATH | pygit2.enums.RepositoryInitFlag.NO_REINIT,
             )
 
     res.headers["HX-Redirect"] = f"/{session.username}/{repo.reponame}"
@@ -88,45 +86,44 @@ async def fork_repository(
         conn: Connection
         async with conn.transaction():
 
-            source_repo = await RepositoryPageView.select_by_id(
-                conn, repository_id=UUID(repository_id)
-            )
-
-            if not source_repo:
+            # Get the repository.
+            repo = await RepositoryPageView.select_by_id(conn, repository_id=UUID(repository_id))
+            if not repo:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
-            if source_repo.parent_id is not None:
+            # Ensure the repository isn't a fork.
+            if repo.parent_id is not None:
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
 
-            if await Repository.is_names_taken(
-                conn, username=session.username, reponame=form.reponame
-            ):
-                raise RequestValidationError(
-                    [PydanticCustomError("reponame_taken", "Repository name taken.")]
-                )
+            # Ensure the fork-repository's name isn't taken.
+            if await Repository.is_names_taken(conn, username=session.username, reponame=form.reponame):
+                raise RequestValidationError([PydanticCustomError("reponame_taken", "Repository name taken.")])
 
-            repo = Repository(
+            # Create the fork-repository.
+            fork_repo = Repository(
                 repository_id=uuid4(),
                 reponame=form.reponame,
-                description=source_repo.description,
+                description=repo.description,
                 private=False,
                 stars=0,
-                tags=source_repo.tags,
+                tags=repo.tags,
                 created_at=datetime.now(),
                 updated_at=datetime.now(),
                 owner_id=session.user_id,
                 parent_id=UUID(repository_id),
             )
-            await repo.insert(conn)
 
-            source_path = (
-                Config.repositories_path / source_repo.owner_username / source_repo.reponame
+            await fork_repo.insert(conn)
+
+            # Clone the repository with Git.
+            fork_repo = pygit2.clone_repository(
+                str(Config.repositories_path / repo.owner_username / repo.reponame),  # old
+                str(Config.repositories_path / session.username / form.reponame),  # new
+                bare=True
             )
-            dest_path = Config.repositories_path / session.username / form.reponame
-            fork_repo = pygit2.clone_repository(str(source_path), str(dest_path), bare=True)
             fork_repo.remotes.delete("origin")
 
-    res.headers["HX-Redirect"] = f"/{session.username}/{repo.reponame}"
+    res.headers["HX-Redirect"] = f"/{session.username}/{fork_repo.reponame}"
 
 
 class CreatePullRequestForm(BaseModel):
@@ -151,13 +148,14 @@ async def create_pull_request(
         conn: Connection
         async with conn.transaction():
 
+            # Get the repositories.
             target_repo = await RepositoryPageView.select_by_id(conn, UUID(target_repo_id))
             source_repo = await RepositoryPageView.select_by_id(conn, UUID(form.source_repo_id))
-
             if not target_repo or (form.source_repo_id and not source_repo):
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
-            pr = PullRequest(
+            # Create the pull-request.
+            pull_req = PullRequest(
                 pull_request_id=uuid4(),
                 title=form.title,
                 description=form.description,
@@ -165,30 +163,28 @@ async def create_pull_request(
                 target_branch=form.target_branch,
                 created_at=datetime.now(),
                 updated_at=datetime.now(),
-                source_id=UUID(form.source_repo_id) if form.source_repo_id else None,
+                source_id=UUID(
+                    form.source_repo_id) if form.source_repo_id else None,
                 target_id=UUID(target_repo_id),
             )
 
-            await pr.insert(conn)
+            await pull_req.insert(conn)
 
-            repo = pygit2.Repository(
-                Config.repositories_path / target_repo.owner_username / target_repo.reponame
-            )
+            # Open the repoisitory's Git data.
+            repo = pygit2.Repository(Config.repositories_path / target_repo.owner_username / target_repo.reponame)
 
+            # If there's a source repository, add the remote to the target repository.
             if source_repo:
                 repo.remotes.create(
-                    str(pr.pull_request_id),
-                    str(
-                        Config.repositories_path / source_repo.owner_username / source_repo.reponame
-                    ),
+                    str(pull_req.pull_request_id),
+                    str(Config.repositories_path /
+                        source_repo.owner_username / source_repo.reponame),
                 )
 
-    res.headers["HX-Redirect"] = (
-        f"/{target_repo.owner_username}/{target_repo.reponame}/pull-requests/{pr.pull_request_id}"
-    )
+    res.headers["HX-Redirect"] = f"/{target_repo.owner_username}/{target_repo.reponame}/pull-requests/{pull_req.pull_request_id}"
 
 
-class GetBranchesResponse(Res):
+class GetBranchesResponse(TemplateData):
     branches: list[str]
 
 
@@ -201,23 +197,23 @@ async def get_branches(
     if not session:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
-    res = GetBranchesResponse(req, "components/pull_request_branch_options.html")
+    data = GetBranchesResponse(req, "components/pull_request_branch_options.html")
 
     async with acquire() as conn:
         conn: Connection
 
+        # Get the repository.
         repo = await RepositoryPageView.select_by_id(conn, UUID(repository_id))
         if not repo:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
-        if repo.owner_id != session.user_id and not await Repository.has_contributor(
-            conn, repo.repository_id, session.user_id
-        ):
+        # Ensure the user is the owner or a contributor.
+        if repo.owner_id != session.user_id and not await Repository.has_contributor(conn, repo.repository_id, session.user_id):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
 
-        repository = pygit2.Repository(
-            Config.repositories_path / repo.owner_username / repo.reponame
-        )
-        res.branches = [b for b in repository.branches.local]
+        # Open the repoisitory's Git data.
+        repository = pygit2.Repository(Config.repositories_path / repo.owner_username / repo.reponame)
 
-    return res()
+        data.branches = [b for b in repository.branches.local]
+
+    return data()

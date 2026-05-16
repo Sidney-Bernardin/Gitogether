@@ -15,7 +15,7 @@
         <form
             x-data
             id="pull_request"
-            hx-patch="{{ url_for('create_pull_request', target_repo_id=repo.repository_id) }}",
+            hx-post="{{ url_for('create_pull_request', target_repo_id=repo.repository_id) }}",
             hx-swap="none"
         >
             <h1>Create Pull-Request</h1>
@@ -31,7 +31,7 @@
                 name="source_repo_id"
                 @change="window.htmx.ajax('GET', `/gitogether/repositories/${$el.value}/branches`, {swap: 'none'})"
             >
-                <option value="">{{ repo.owner_username }}/{{ repo.reponame }}</option>
+                <option value="{{ repo.repository_id  }}">{{ repo.owner_username }}/{{ repo.reponame }}</option>
                 {% for source_repo in source_repos %}
                     <option value="{{ source_repo.repository_id }}">
                         {{ source_repo.owner_username }}/{{ source_repo.reponame }}
@@ -41,13 +41,17 @@
 
             <label for="source">Source Branch</label>
             <select id="source_branch_select" name="source_branch">
-                {% for branch in repo_branches %}
+                {% for branch in branches %}
                     <option value="{{ branch }}">{{ branch }}</option>
                 {% endfor %}
             </select>
 
             <label for="target">Target Branch</label>
-            <input type="text" name="target_branch" placeholder="Target Branch">
+            <select id="source_branch_select" name="target_branch">
+                {% for branch in branches %}
+                    <option value="{{ branch }}">{{ branch }}</option>
+                {% endfor %}
+            </select>
 
             <input type="submit" name="submit" value="Create Pull-Request">
         </form>

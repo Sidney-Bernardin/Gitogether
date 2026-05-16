@@ -14,9 +14,10 @@ from app.postgres import (
     UserPageView,
     PullRequest,
 )
+
 from app.dependencies import (
     Config,
-    Res,
+    TemplateData,
     Session,
     SessionAuth,
     UsernamePathParam,
@@ -48,7 +49,7 @@ def signin_page(req: Request):
     return templates.TemplateResponse("pages/signin.html", {"request": req})
 
 
-class UserPage(Res):
+class UserPageData(TemplateData):
     session: Session | None
     username: str
     is_owner: bool
@@ -58,34 +59,40 @@ class UserPage(Res):
 
 
 @router.get("/{username}", name="user_page")
-async def user_page(req: Request, session: SessionAuth, username: UsernamePathParam):
-    res = UserPage(req, "pages/user.html")
-    res.session = session
-    res.username = username
-    res.is_owner = session is not None and session.username == username
+async def user_page(
+    req: Request,
+    session: SessionAuth,
+    username: UsernamePathParam,
+):
+    data = UserPageData(req, "pages/user.html")
+    data.session = session
+    data.username = username
+    data.is_owner = session is not None and session.username == username
 
     async with acquire() as conn:
         conn: Connection
 
-        res.user = await UserPageView.select_by_username(conn, username)
-        if not res.user:
-            return res()
+        # Get the user.
+        data.user = await UserPageView.select_by_username(conn, username)
+        if not data.user:
+            return data()
 
-        res.repos = await Repository.select_by_owner_id(conn, res.user.user_id, not res.is_owner)
-        res.contributed_repos = await Repository.select_by_contributor_id(
-            conn, res.user.user_id, not res.is_owner
-        )
+        # Get the user's repositories.
+        data.repos = await Repository.select_by_owner_id(conn, data.user.user_id, not data.is_owner)
 
-    return res()
+        # Get the user's contributed repositories.
+        data.contributed_repos = await Repository.select_by_contributor_id(conn, data.user.user_id, not data.is_owner)
+
+    return data()
 
 
-class RepositoryPage(Res):
+class RepositoryPageData(TemplateData):
     session: Session | None
     username: str
     file_path: str
     file_path_sufix: str
     repo: RepositoryPageView | None = None
-    repo_branches: list[str] | None = None
+    branches: list[str] | None = None
     commit_id: str | None = None
     commits: list[pygit2.Commit] | None = None
     file: Any
@@ -102,60 +109,60 @@ async def get_repo(
     commit_id: str = "",
     path: str = "",
 ):
-    res = RepositoryPage(req, "pages/repository.html")
-    res.session = session
-    res.username = username
-    res.file_path = path
-    res.file_path_sufix = f"{path}/" if path else ""
+    data = RepositoryPageData(req, "pages/repository.html")
+    data.session = session
+    data.username = username
+    data.file_path = path
+    data.file_path_sufix = f"{path}/" if path else ""
+
+    async with acquire() as conn:
+        conn: Connection
+
+        # Get the repository.
+        data.repo = await RepositoryPageView.select_by_names(conn, username, reponame)
+        if not data.repo:
+            return data()
+
+        # If the repository is private, ensure the user is it's owner or a contributor.
+        if data.repo.private and (
+            not session
+            or (
+                data.repo.owner_id != session.user_id
+                and not await Repository.has_contributor(conn, data.repo.repository_id, session.user_id)
+            )
+        ):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
 
     try:
-        async with acquire() as conn:
-            conn: Connection
 
-            res.repo = await RepositoryPageView.select_by_names(conn, username, reponame)
-            if not res.repo:
-                return res()
+        # Open the repoisitory's Git data.
+        repo = pygit2.Repository(Config.repositories_path / username / reponame)
 
-            if res.repo.private and (
-                not session
-                or (
-                    res.repo.owner_id != session.user_id
-                    and not await Repository.has_contributor(
-                        conn, res.repo.repository_id, session.user_id
-                    )
-                )
-            ):
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
-
-        try:
-            repo = pygit2.Repository(Config.repositories_path / username / reponame)
-            res.repo_branches = [branch for branch in repo.branches.local]
-            res.commit_id = commit_id or repo.head.shorthand
-            commit = repo.revparse_single(res.commit_id)
-            res.commits = [c for c in repo.walk(commit.id, pygit2.enums.SortMode.TOPOLOGICAL)]
-            res.file = repo.revparse_single(f"{res.commit_id}:{path}")
-        except KeyError:
-            pass
-        except pygit2.GitError:
-            pass
-
-        return res()
+        data.branches = [branch for branch in repo.branches.local]
+        data.commit_id = commit_id or repo.head.shorthand
+        commit = repo.revparse_single(data.commit_id)
+        data.commits = [c for c in repo.walk(commit.id, pygit2.enums.SortMode.TOPOLOGICAL)]
+        data.file = repo.revparse_single(f"{data.commit_id}:{path}")
 
     except pygit2.GitError as err:
-        if (
-            (msg := err.args[0])
-            and msg.startswith("reference 'refs/heads/")
-            and msg.endswith("' not found")
-        ):
-            return res()
+
+        # When the branch doesn't exist ignore the error.
+        if (msg := err.args[0]) and msg.startswith("reference 'refs/heads/") and msg.endswith("' not found"):
+            return data()
+
         raise err
 
+    except KeyError:
+        pass
 
-class PullRequestsPage(Res):
+    return data()
+
+
+class PullRequestsPageData(TemplateData):
     session: Session | None
     username: str
     repo: RepositoryPageView | None = None
-    repo_branches: list[str] = []
+    branches: list[str] = []
     pull_requests: list[PullRequest] = []
     source_repos: list[RepositoryPageView] = []
 
@@ -172,86 +179,37 @@ async def pull_requests_page(
         response.headers["HX-Redirect"] = "/signin"
         return
 
-    res = PullRequestsPage(req, "pages/pull_requests.html")
-    res.session = session
-    res.username = username
+    data = PullRequestsPageData(req, "pages/pull_requests.html")
+    data.session = session
+    data.username = username
 
     async with acquire() as conn:
         conn: Connection
 
-        res.repo = await RepositoryPageView.select_by_names(conn, username, reponame)
-        if not res.repo:
-            return res()
+        # Get the repository.
+        data.repo = await RepositoryPageView.select_by_names(conn, username, reponame)
+        if not data.repo:
+            return data()
 
+        # Get the pull-requests.
+        data.pull_requests = await PullRequest.select_by_target_id(conn, data.repo.repository_id)
+
+        # Open the repoisitory's Git data.
         respository = pygit2.Repository(Config.repositories_path / username / reponame)
-        res.repo_branches = [b for b in respository.branches]
 
-        res.pull_requests = await PullRequest.select_by_target_id(conn, res.repo.repository_id)
-
-        res.source_repos = [
+        data.branches = [b for b in respository.branches]
+        data.source_repos = [
             *await RepositoryPageView.select_by_parent_and_user_id(
                 conn,
-                res.repo.repository_id,
+                data.repo.repository_id,
                 session.user_id,
             ),
         ]
 
-    return res()
+    return data()
 
 
-class CreatePullRequestPage(Res):
-    session: Session | None
-    username: str
-    repo: RepositoryPageView | None = None
-    repo_branches: list[str] | None = None
-    source_repo: RepositoryPageView | None = None
-    source_repo_branches: list[str] | None = None
-
-
-@router.get("/{username}/{reponame}/create-pull-request", name="create_pull_request_page")
-async def create_pull_request_page(
-    req: Request,
-    session: SessionAuth,
-    username: UsernamePathParam,
-    reponame: ReponamePathParam,
-    child: str | None = None,
-):
-    res = CreatePullRequestPage(req, "pages/create_pull_request.html")
-    res.session = session
-    res.username = username
-
-    async with acquire() as conn:
-        conn: Connection
-
-        res.repo = await RepositoryPageView.select_by_names(conn, username, reponame)
-        if not res.repo:
-            return res()
-
-        if child:
-            res.source_repo = await RepositoryPageView.select_by_id(conn, UUID(child))
-
-        if not res.source_repo:
-            return res()
-
-        if res.source_repo.private and (
-            not session
-            or not await Repository.has_contributor(conn, res.repo.repository_id, session.user_id)
-        ):
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
-
-    repo = pygit2.Repository(Config.repositories_path / username / reponame)
-    res.repo_branches = [branch for branch in repo.branches]
-
-    source_repo_path = (
-        Config.repositories_path / res.source_repo.owner_username / res.source_repo.reponame
-    )
-    source_repo = pygit2.Repository(source_repo_path)
-    res.source_repo_branches = [branch for branch in source_repo.branches]
-
-    return res()
-
-
-class PullRequestPage(Res):
+class PullRequestPageData(TemplateData):
     session: Session | None
     username: str
     repo: RepositoryPageView | None = None
@@ -260,10 +218,7 @@ class PullRequestPage(Res):
     diff: pygit2.Diff | None = None
 
 
-@router.get(
-    "/{username}/{reponame}/pull-requests/{pull_request_id}",
-    name="repository_pull_request_page",
-)
+@router.get("/{username}/{reponame}/pull-requests/{pull_request_id}", name="repository_pull_request_page")
 async def pull_request_page(
     req: Request,
     session: SessionAuth,
@@ -271,43 +226,47 @@ async def pull_request_page(
     reponame: ReponamePathParam,
     pull_request_id: str,
 ):
-    res = PullRequestPage(req, "pages/pull_request.html")
-    res.session = session
-    res.username = username
+    data = PullRequestPageData(req, "pages/pull_request.html")
+    data.session = session
+    data.username = username
 
     async with acquire() as conn:
         conn: Connection
 
-        res.repo = await RepositoryPageView.select_by_names(conn, username, reponame)
-        if not res.repo:
-            return res()
+        # Get the repository.
+        data.repo = await RepositoryPageView.select_by_names(conn, username, reponame)
+        if not data.repo:
+            return data()
 
-        res.pull_req = await PullRequest.select_by_id(conn, UUID(pull_request_id))
-        if not res.pull_req:
-            return res()
+        # Get the pull-request.
+        data.pull_req = await PullRequest.select_by_id(conn, UUID(pull_request_id))
+        if not data.pull_req:
+            return data()
 
+    # Open the repoisitory's Git data.
     repo = pygit2.Repository(Config.repositories_path / username / reponame)
-    repo.remotes[str(res.pull_req.pull_request_id)].fetch()
+    repo.remotes[str(data.pull_req.pull_request_id)].fetch()
 
-    target_branch = repo.lookup_reference(f"refs/heads/{res.pull_req.target_branch}")
-    source_branch = repo.lookup_reference(
-        f"refs/heads/{res.pull_req.source_branch}"
-        if res.pull_req.source_branch == "HEAD"
-        else f"refs/remotes/{res.pull_req.pull_request_id}/{res.pull_req.source_branch}"
-    )
+    # Get the target and source branches.
+    target_branch = repo.lookup_reference(f"refs/heads/{data.pull_req.target_branch}")
+    source_branch = repo.lookup_reference(f"refs/heads/{data.pull_req.source_branch}" if data.pull_req.source_branch == "HEAD" else f"refs/remotes/{data.pull_req.pull_request_id}/{data.pull_req.source_branch}")
 
+    # Temporarily merge.
     index = repo.merge_commits(target_branch.target, source_branch.target)
+
+    # If there are conflicts, get their filenames.
     if index.conflicts:
-        res.conflicts = [c[1].path for c in index.conflicts]
-        return res()
+        data.conflicts = [c[1].path for c in index.conflicts]
+        return data()
 
-    diff = index.diff_to_tree(repo.head.peel(pygit2.Tree))
-    res.diff = "".join(([p.text for p in diff]))
+    # Get the diff of the merge against the target branch's head.
+    diff = index.diff_to_tree(repo.head.peel(pygit2.Tree))  # TODO use the target branch's head
+    data.diff = "".join(([p.text for p in diff]))
 
-    return res()
+    return data()
 
 
-class ForksPage(Res):
+class ForksPageData(TemplateData):
     session: Session | None
     username: str
     repo: RepositoryPageView | None = None
@@ -321,17 +280,19 @@ async def forks_page(
     username: UsernamePathParam,
     reponame: ReponamePathParam,
 ):
-    res = ForksPage(req, "pages/forks.html")
-    res.session = session
-    res.username = username
+    data = ForksPageData(req, "pages/forks.html")
+    data.session = session
+    data.username = username
 
     async with acquire() as conn:
         conn: Connection
 
-        res.repo = await RepositoryPageView.select_by_names(conn, username, reponame)
-        if not res.repo:
-            return res()
+        # Get the repository.
+        data.repo = await RepositoryPageView.select_by_names(conn, username, reponame)
+        if not data.repo:
+            return data()
 
-        res.forks = await RepositoryPageView.select_by_parent_id(conn, res.repo.repository_id)
+        # Get the forks.
+        data.forks = await RepositoryPageView.select_by_parent_id(conn, data.repo.repository_id)
 
-    return res()
+    return data()

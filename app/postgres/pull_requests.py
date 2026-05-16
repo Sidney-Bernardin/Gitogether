@@ -28,15 +28,18 @@ class PullRequest:
             INSERT INTO pull_requests (
                 pull_request_id,
                 title, description, source_branch, target_branch,
+                created_at, updated_at,
                 source_id, target_id
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
             """,
             self.pull_request_id,
             self.title,
             self.description,
             self.source_branch,
             self.target_branch,
+            self.created_at,
+            self.updated_at,
             self.source_id,
             self.target_id,
         )
