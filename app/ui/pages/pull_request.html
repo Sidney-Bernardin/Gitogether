@@ -1,18 +1,22 @@
-{% extends "layouts/repo_layout.html" %}
+{% extends "layouts/repository_layout.html" %}
 
-{% block title %}{{pull_req.title}} | {{ super() }}{% endblock %}
+{% block title %}{{pull_request.title}} | {{ super() }}{% endblock %}
 
 {% block content %}
 {{ super() }}
 
 <div class="wrapper">
-    <h1>{{ pull_req.title }}</h1>
+    <a href="{{ url_for('repository_pull_requests_page', username=repository.owner_username, reponame=repository.reponame) }}">
+        <<< Pull-Requests
+    </a>
+
+    <h1>{{ pull_request.title }}</h1>
     <p>
-        {{ pull_req.source_branch }}
+        {{ pull_request.source_branch }}
         <span>>>></span>
-        {{ pull_req.target_branch }}
+        {{ pull_request.target_branch }}
     </p>
-    <p>{{ pull_req.description }}</p>
+    <p>{{ pull_request.description }}</p>
 
     {% if conflicts %}
         Conflicts detected:

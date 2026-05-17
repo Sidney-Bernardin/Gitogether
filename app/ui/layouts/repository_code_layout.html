@@ -1,15 +1,15 @@
-{% extends "layouts/repo_layout.html" %}
+{% extends "layouts/repository_layout.html" %}
 
-{% block title %}{{ repo.reponame }}{% endblock %}
+{% block title %}{{ repository.reponame }}{% endblock %}
 
 {% block head %}
     {{ super() }}
-    <link rel="stylesheet" href="{{ url_for("static", path="layouts/repo_code_layout.css") }}">
+    <link rel="stylesheet" href="{{ url_for("static", path="layouts/repository_code_layout.css") }}">
 {% endblock %}
 
 {% block content %}
     {{ super() }}
-    {% if repo %}
+    {% if repository %}
         <div class="branches-side-bar">
             <section class="branches">
                 <h2>branches</h2>
@@ -17,7 +17,7 @@
                     <ul>
                         {% for branch in branches %}
                             <li>
-                                <a href="{{ url_for("repository_code_page", username=username, reponame=repo.reponame, commit_id=branch) }}">
+                                <a href="{{ url_for("repository_code_page", username=username, reponame=repository.reponame, commit_id=branch) }}">
                                     {{ branch }}
                                 </a>
                             </li>
@@ -32,7 +32,7 @@
                     <ul>
                         {% for c in commits %}
                             <li>
-                                <a href="{{ url_for("repository_code_page", username=username, reponame=repo.reponame, commit_id=c.id) }}">
+                                <a href="{{ url_for("repository_code_page", username=username, reponame=repository.reponame, commit_id=c.id) }}">
                                     <p class="message">{{c.message}}</p>
                                     <div class="info">
                                         <p class="name">{{ c.author.name}}</p>

@@ -1,6 +1,6 @@
-{% extends "layouts/repo_layout.html" %}
+{% extends "layouts/repository_layout.html" %}
 
-{% block title %}{{ repo.reponame }}{% endblock %}
+{% block title %}{{ repository.reponame }}{% endblock %}
 
 {% block head %}
     {{ super() }}
@@ -12,11 +12,11 @@
     {{ super() }}
 
     <div class="wrapper">
-        <form id="fork" hx-patch="{{ url_for('fork_repository', repository_id=repo.repository_id) }}", hx-swap="none">
+        <form id="fork" hx-patch="{{ url_for('fork_repository', repository_id=repository.repository_id) }}", hx-swap="none">
             <h1>Create Fork</h1>
 
             <label for="reponame">Fork name</label>
-            <input type="text" name="reponame" value="{{ repo.reponame }}-fork" placeholder="Fork name">
+            <input type="text" name="reponame" value="{{ repository.reponame }}-fork" placeholder="Fork name">
 
             <input type="submit" name="submit" value="Create Fork">
         </form>

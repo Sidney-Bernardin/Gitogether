@@ -19,6 +19,7 @@ class PullRequest:
     created_at: datetime
     updated_at: datetime
 
+    owner_id: UUID
     source_id: UUID | None
     target_id: UUID
 
@@ -29,9 +30,9 @@ class PullRequest:
                 pull_request_id,
                 title, description, source_branch, target_branch,
                 created_at, updated_at,
-                source_id, target_id
+                owner_id, source_id, target_id
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
             """,
             self.pull_request_id,
             self.title,
@@ -40,6 +41,7 @@ class PullRequest:
             self.target_branch,
             self.created_at,
             self.updated_at,
+            self.owner_id,
             self.source_id,
             self.target_id,
         )
@@ -54,7 +56,7 @@ class PullRequest:
                 pull_request_id,
                 title, description, source_branch, target_branch,
                 created_at, updated_at,
-                source_id, target_id
+                owner_id, source_id, target_id
             FROM pull_requests
             WHERE pull_request_id = $1
             """,
@@ -71,7 +73,7 @@ class PullRequest:
                 pull_request_id,
                 title, description, source_branch, target_branch,
                 created_at, updated_at,
-                source_id, target_id
+                owner_id, source_id, target_id
             FROM pull_requests
             WHERE target_id = $1
             """,

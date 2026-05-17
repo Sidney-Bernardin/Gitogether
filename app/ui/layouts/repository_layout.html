@@ -1,58 +1,57 @@
 {% extends "layouts/layout.html" %}
 
-{% block title %}{{ repo.reponame }}{% endblock %}
+{% block title %}{{ repository.reponame }}{% endblock %}
 
 {% block head %}
-    <link rel="stylesheet" href="{{ url_for("static", path="layouts/repo_layout.css") }}">
+    <link rel="stylesheet" href="{{ url_for("static", path="layouts/repository_layout.css") }}">
 {% endblock %}
 
 {% block content %}
-    {% if repo %}
+    {% if repository %}
         <div class="repo-side-bar">
             <div class="head">
                 <a href="{{ url_for("user_page", username=username) }}">/{{ username }}</a>
-                <a href="{{ url_for("repository_code_page", username=username, reponame=repo.reponame) }}">/{{ repo.reponame }}</a>
+                <a href="{{ url_for("repository_code_page", username=username, reponame=repository.reponame) }}">/{{ repository.reponame }}</a>
 
-                {% if repo.parent_id %}
-                    <a href="{{ url_for("repository_code_page", username=repo.parent_owner_username, reponame=repo.parent_reponame) }}">
-                        Fork of: {{ repo.parent_owner_username }}/{{ repo.parent_reponame }}
+                {% if repository.parent_id %}
+                    <a href="{{ url_for("repository_code_page", username=repository.parent_owner_username, reponame=repository.parent_reponame) }}">
+                        Fork of: {{ repository.parent_owner_username }}/{{ repository.parent_reponame }}
                     </a>
                 {% endif %}
 
                 <hr>
 
-                <p class="description">{{ repo.description }}</p>
+                <p class="description">{{ repository.description }}</p>
                 <div class="tags">
-                    {% for tag in repo.tags %}
+                    {% for tag in repository.tags %}
                         <span>{{ tag }}</span>
                     {% endfor %}
                 </div>
 
-                stars: {{ repo.stars }}
+                stars: {{ repository.stars }}
             </div>
-
 
             <ul>
                 <li class="{{ 'active' if request.scope.get("route").name == 'repository_code_page' }}">
-                    <a href="{{ url_for("repository_code_page", username=username, reponame=repo.reponame) }}">
+                    <a href="{{ url_for("repository_code_page", username=username, reponame=repository.reponame) }}">
                         <i class="fa-solid fa-code"></i>
                         code
                     </a>
                 </li>
-                <li class="{{ 'active' if request.scope.get("route").name == 'repository_pull_requests_page' }}">
-                    <a href="{{ url_for("repository_pull_requests_page", username=username, reponame=repo.reponame) }}">
+                <li class="{{ 'active' if request.scope.get("route").name in ['repository_pull_requests_page', 'repository_pull_request_page'] }}">
+                    <a href="{{ url_for("repository_pull_requests_page", username=username, reponame=repository.reponame) }}">
                         <i class="fa-solid fa-code-pull-request"></i>
                         pull requests
                     </a>
                 </li>
                 <li class="{{ 'active' if request.scope.get("route").name == 'repository_forks_page' }}">
-                    <a href="{{ url_for("repository_forks_page", username=username, reponame=repo.reponame) }}">
+                    <a href="{{ url_for("repository_forks_page", username=username, reponame=repository.reponame) }}">
                         <i class="fa-solid fa-code-fork"></i>
                         forks
                     </a>
                 </li>
                 <li class="{{ 'active' if request.scope.get("route").name == 'repository_settings_page' }}">
-                    <a href="{{ url_for("repository_code_page", username=username, reponame=repo.reponame) }}">
+                    <a href="{{ url_for("repository_code_page", username=username, reponame=repository.reponame) }}">
                         <i class="fa-solid fa-gear"></i>
                         settings
                     </a>

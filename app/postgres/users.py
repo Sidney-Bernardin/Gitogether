@@ -56,6 +56,19 @@ class UserPageView:
     username: str
 
     @classmethod
+    async def select_by_id(cls, c: Connection, user_id: UUID) -> Self | None:
+        return await fetchrow(
+            c,
+            cls,
+            """
+            SELECT user_id, username
+            FROM users
+            WHERE user_id = $1
+            """,
+            user_id,
+        )
+
+    @classmethod
     async def select_by_username(cls, c: Connection, username: str) -> Self | None:
         return await fetchrow(
             c,

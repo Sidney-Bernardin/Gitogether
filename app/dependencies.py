@@ -2,7 +2,6 @@ import os
 import jwt
 import bcrypt
 
-from uuid import UUID
 from typing import Annotated, Tuple
 from pydantic.dataclasses import dataclass
 from asyncpg import Connection
@@ -12,8 +11,12 @@ from fastapi.security import HTTPBasic
 from fastapi.templating import Jinja2Templates
 from starlette.templating import _TemplateResponse
 
-from app.postgres import Repository, User, acquire
 from app.config import Config
+from app.postgres import (
+    Repository, RepositoryPageView,
+    User, UserPageView,
+    acquire,
+)
 
 templates = Jinja2Templates(os.path.join(os.path.dirname(__file__), "ui"))
 
@@ -31,8 +34,7 @@ class TemplateData:
 
 @dataclass
 class Session:
-    user_id: UUID
-    username: str
+    user: UserPageView
 
 
 username_regex = r"^[a-zA-Z0-9_-]+$"
@@ -42,10 +44,17 @@ reponame_regex = r"^[a-zA-Z0-9_-]+$"
 ReponamePathParam = Annotated[str, Path(title="reponame", pattern=reponame_regex)]
 
 
-def session_auth(req: Request) -> Session | None:
+async def session_auth(req: Request) -> Session | None:
     try:
         session = jwt.decode(req.cookies["session"], Config.jwt_secret, algorithms=["HS256"])
-        return Session(session["user_id"], session["username"])
+
+        async with acquire() as conn:
+            user = await UserPageView.select_by_id(conn, session["user_id"])
+            if not user:
+                return None
+
+        return Session(user)
+
     except jwt.ExpiredSignatureError:
         return None
     except jwt.InvalidTokenError:
@@ -53,8 +62,14 @@ def session_auth(req: Request) -> Session | None:
     except KeyError:
         return None
 
+DepSession = Annotated[Session | None, Depends(session_auth)]
 
-SessionAuth = Annotated[Session | None, Depends(session_auth)]
+
+async def repository_page(username: UsernamePathParam, reponame: ReponamePathParam) -> RepositoryPageView | None:
+    async with acquire() as conn:
+        return await RepositoryPageView.select_by_names(conn, username, reponame)
+
+DepRepositoryPage = Annotated[RepositoryPageView | None, Depends(repository_page)]
 
 
 class GitAuth(HTTPBasic):

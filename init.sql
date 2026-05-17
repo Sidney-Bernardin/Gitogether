@@ -33,6 +33,7 @@ CREATE TABLE pull_requests (
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
 
+    owner_id uuid NOT NULL REFERENCES users(user_id),
     source_id uuid REFERENCES repositories(repository_id),
     target_id uuid NOT NULL REFERENCES repositories(repository_id)
 );

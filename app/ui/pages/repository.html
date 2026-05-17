@@ -1,6 +1,6 @@
-{% extends "layouts/repo_code_layout.html" %}
+{% extends "layouts/repository_code_layout.html" %}
 
-{% block title %}{{ repo.reponame }}{% endblock %}
+{% block title %}{{ repository.reponame }}{% endblock %}
 
 {% block head %}
   {{ super() }}
@@ -25,7 +25,7 @@
                 <ul>
                     {% for f in file %}
                         <li>
-                            <a href="{{ url_for("repository_code_page", username=username, reponame=repo.reponame, commit_id=commit_id, path=file_path_sufix~f.name) }}">
+                            <a href="{{ url_for("repository_code_page", username=username, reponame=repository.reponame, commit_id=commit_id, path=file_path_sufix~f.name) }}">
                                 {% if f.type_str == "tree" %}
                                     {{ f.name }}/
                                 {% else %}

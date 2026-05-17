@@ -11,7 +11,7 @@ from pydantic_core import PydanticCustomError
 from fastapi import APIRouter, Form, HTTPException, Request, Response, status
 from fastapi.exceptions import RequestValidationError
 
-from app.dependencies import Config, TemplateData, SessionAuth, reponame_regex
+from app.dependencies import Config, TemplateData, DepSession, reponame_regex
 from app.postgres import Repository, RepositoryPageView, PullRequest, acquire
 
 router = APIRouter(prefix="/repositories")
@@ -27,7 +27,7 @@ class CreateReposiotryForm(BaseModel):
 @router.post("/")
 async def create_repository(
     res: Response,
-    session: SessionAuth,
+    session: DepSession,
     form: Annotated[CreateReposiotryForm, Form()],
 ):
     if not session:
@@ -38,7 +38,7 @@ async def create_repository(
         async with conn.transaction():
 
             # Ensure the repository's name isn't taken.
-            if await Repository.is_names_taken(conn, username=session.username, reponame=form.reponame):
+            if await Repository.is_names_taken(conn, username=session.user.username, reponame=form.reponame):
                 raise RequestValidationError([PydanticCustomError("reponame_taken", "Repository name taken.")])
 
             # Create the repository.
@@ -51,21 +51,21 @@ async def create_repository(
                 tags=form.tags,
                 created_at=datetime.now(),
                 updated_at=datetime.now(),
-                owner_id=session.user_id,
+                owner_id=session.user.user_id,
                 parent_id=None,
             )
 
             await repo.insert(conn)
 
             # Initialize the repository with Git.
-            repo_path = Config.repositories_path / session.username / form.reponame
+            repo_path = Config.repositories_path / session.user.username / form.reponame
             pygit2.init_repository(
                 repo_path,
                 bare=True,
                 flags=pygit2.enums.RepositoryInitFlag.MKPATH | pygit2.enums.RepositoryInitFlag.NO_REINIT,
             )
 
-    res.headers["HX-Redirect"] = f"/{session.username}/{repo.reponame}"
+    res.headers["HX-Redirect"] = f"/{session.user.username}/{repo.reponame}"
 
 
 class ForkReposiotryForm(BaseModel):
@@ -75,7 +75,7 @@ class ForkReposiotryForm(BaseModel):
 @router.patch("/{repository_id}/fork", name="fork_repository")
 async def fork_repository(
     res: Response,
-    session: SessionAuth,
+    session: DepSession,
     repository_id: str,
     form: Annotated[ForkReposiotryForm, Form()],
 ):
@@ -96,7 +96,7 @@ async def fork_repository(
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
 
             # Ensure the fork-repository's name isn't taken.
-            if await Repository.is_names_taken(conn, username=session.username, reponame=form.reponame):
+            if await Repository.is_names_taken(conn, username=session.user.username, reponame=form.reponame):
                 raise RequestValidationError([PydanticCustomError("reponame_taken", "Repository name taken.")])
 
             # Create the fork-repository.
@@ -109,7 +109,7 @@ async def fork_repository(
                 tags=repo.tags,
                 created_at=datetime.now(),
                 updated_at=datetime.now(),
-                owner_id=session.user_id,
+                owner_id=session.user.user_id,
                 parent_id=UUID(repository_id),
             )
 
@@ -118,27 +118,27 @@ async def fork_repository(
             # Clone the repository with Git.
             clone = pygit2.clone_repository(
                 str(Config.repositories_path / repo.owner_username / repo.reponame),  # old
-                str(Config.repositories_path / session.username / form.reponame),  # new
+                str(Config.repositories_path / session.user.username / form.reponame),  # new
                 bare=True
             )
             clone.remotes.delete("origin")
 
-    res.headers["HX-Redirect"] = f"/{session.username}/{fork_repo.reponame}"
+    res.headers["HX-Redirect"] = f"/{session.user.username}/{fork_repo.reponame}"
 
 
 class CreatePullRequestForm(BaseModel):
     title: str = Field(min_length=1, max_length=50)
     description: str = Field(min_length=1, max_length=1000)
-    source_repo_id: str | None = Field(default=None)
+    source_repository_id: str | None = Field(default=None)
     source_branch: str = Field(min_length=1, max_length=1000)
     target_branch: str = Field(min_length=1, max_length=1000)
 
 
-@router.post("/{target_repo_id}/pull-requests", name="create_pull_request")
+@router.post("/{target_repository_id}/pull-requests", name="create_pull_request")
 async def create_pull_request(
     res: Response,
-    session: SessionAuth,
-    target_repo_id: str,
+    session: DepSession,
+    target_repository_id: str,
     form: Annotated[CreatePullRequestForm, Form()],
 ):
     if not session:
@@ -149,9 +149,9 @@ async def create_pull_request(
         async with conn.transaction():
 
             # Get the repositories.
-            target_repo = await RepositoryPageView.select_by_id(conn, UUID(target_repo_id))
-            source_repo = await RepositoryPageView.select_by_id(conn, UUID(form.source_repo_id))
-            if not target_repo or (form.source_repo_id and not source_repo):
+            target_repo = await RepositoryPageView.select_by_id(conn, UUID(target_repository_id))
+            source_repo = await RepositoryPageView.select_by_id(conn, UUID(form.source_repository_id))
+            if not target_repo or (form.source_repository_id and not source_repo):
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
             # Create the pull-request.
@@ -163,9 +163,9 @@ async def create_pull_request(
                 target_branch=form.target_branch,
                 created_at=datetime.now(),
                 updated_at=datetime.now(),
-                source_id=UUID(
-                    form.source_repo_id) if form.source_repo_id else None,
-                target_id=UUID(target_repo_id),
+                owner_id=session.user.user_id,
+                source_id=UUID(form.source_repository_id) if form.source_repository_id else None,
+                target_id=UUID(target_repository_id),
             )
 
             await pull_req.insert(conn)
@@ -191,7 +191,7 @@ class GetBranchesResponse(TemplateData):
 @router.get("/{repository_id}/branches", name="get_branches")
 async def get_branches(
     req: Request,
-    session: SessionAuth,
+    session: DepSession,
     repository_id: str,
 ):
     if not session:
@@ -203,17 +203,17 @@ async def get_branches(
         conn: Connection
 
         # Get the repository.
-        repo = await RepositoryPageView.select_by_id(conn, UUID(repository_id))
-        if not repo:
+        repository = await RepositoryPageView.select_by_id(conn, UUID(repository_id))
+        if not repository:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
         # Ensure the user is the owner or a contributor.
-        if repo.owner_id != session.user_id and not await Repository.has_contributor(conn, repo.repository_id, session.user_id):
+        if repository.owner_id != session.user.user_id and not await Repository.has_contributor(conn, repository.repository_id, session.user.user_id):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
 
         # Open the repoisitory's Git data.
-        repository = pygit2.Repository(Config.repositories_path / repo.owner_username / repo.reponame)
+        repo = pygit2.Repository(Config.repositories_path / repository.owner_username / repository.reponame)
 
-        data.branches = [b for b in repository.branches.local]
+        data.branches = [b for b in repo.branches.local]
 
     return data()

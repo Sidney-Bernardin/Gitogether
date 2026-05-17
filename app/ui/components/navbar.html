@@ -12,7 +12,7 @@
     <ul>
         {% call nav_item("home", "/") %}/home{% endcall %}
         {% if session %}
-            {% call nav_item("user_page", url_for("user_page", username=session.username)) %}
+            {% call nav_item("user_page", url_for("user_page", username=session.user.username)) %}
                 /profile
             {% endcall %}
         {% endif %}
