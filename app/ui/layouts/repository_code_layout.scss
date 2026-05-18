@@ -43,6 +43,7 @@
 
       ul {
         overflow-y: auto;
+        overflow-x: hidden;
         scrollbar-color: $bg-c transparent;
 
         li {
@@ -61,7 +62,7 @@
             }
 
             .message {
-              text-wrap: nowrap;
+              // text-wrap: nowrap;
               font-size: 1.5rem;
               font-weight: 500;
             }

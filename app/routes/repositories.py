@@ -1,9 +1,10 @@
-from datetime import datetime
+import subprocess
 import pygit2
 
+from datetime import datetime
 from typing import Annotated
-from uuid import UUID, uuid4
 from asyncpg import Connection
+from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
 from pydantic_core import PydanticCustomError
@@ -182,6 +183,98 @@ async def create_pull_request(
                 )
 
     res.headers["HX-Redirect"] = f"/{target_repo.owner_username}/{target_repo.reponame}/pull-requests/{pull_req.pull_request_id}"
+
+
+@router.patch("/pull-requests/{pull_request_id}/complete", name="complete_pull_request")
+async def complete_pull_request(
+    req: Request,
+    session: DepSession,
+    pull_request_id: str,
+):
+    if not session:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+
+    async with acquire() as conn:
+        async with conn.transaction():
+
+            # Get the pull-request.
+            pull_req = await PullRequest.select_by_id(conn, UUID(pull_request_id))
+            if not pull_req:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+            # Ensure the user is the owner or a contributor.
+            if pull_req.owner_id != session.user.user_id and not await Repository.has_contributor(conn, pull_req.target_id, session.user.user_id):
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+
+            target_data = await RepositoryPageView.select_by_id(conn, pull_req.target_id)
+            if not target_data:
+                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            source_data = target_data
+
+            target = pygit2.Repository(Config.repositories_path / target_data.owner_username / target_data.reponame)
+
+            target_branch_ref_name = f"refs/heads/{pull_req.target_branch}"
+            source_branch_ref_name = f"refs/heads/{pull_req.source_branch}"
+
+            if pull_req.source_id:
+
+                source_data = await RepositoryPageView.select_by_id(conn, pull_req.source_id)
+                if not source_data:
+                    raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+                source_branch_ref_name = f"refs/remotes/{pull_req.pull_request_id}/{pull_req.source_branch}"
+                target.remotes[str(pull_req.pull_request_id)].fetch()
+
+            target_branch_ref = target.lookup_reference(target_branch_ref_name)
+            source_branch_ref = target.lookup_reference(source_branch_ref_name)
+
+            analasis, _ = target.merge_analysis(source_branch_ref.target, target_branch_ref_name)
+
+            merge_oid: pygit2.Oid | str = ""
+            merge_message = ""
+
+            if analasis & pygit2.GIT_MERGE_ANALYSIS_UP_TO_DATE:
+                print("Already up to date")
+                return
+
+            elif analasis & pygit2.GIT_MERGE_ANALYSIS_FASTFORWARD:
+                print("Can be fast-forwarded")
+                merge_oid = source_branch_ref.target
+                merge_message = f"Merge {pull_req.source_branch} into {pull_req.target_branch}"
+
+            elif analasis & pygit2.GIT_MERGE_ANALYSIS_NORMAL:
+                print("Merge commit required")
+
+                index = target.merge_commits(target_branch_ref.target, source_branch_ref.target)
+                if index.conflicts:
+                    print("Conflicts detected")
+                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Merge conflicts detected.")
+
+                tree_oid = index.write_tree(target)
+
+                author = pygit2.Signature(session.user.username, f"{session.user.username}@gitogether.com")
+                committer = author
+                merge_message = f"Merge {pull_req.source_branch} from {source_data.owner_username}/{source_data.reponame} into {pull_req.target_branch}"
+                merge_oid = target.create_commit(
+                    None, author, committer, merge_message, tree_oid,
+                    [target_branch_ref.target, source_branch_ref.target],
+                )
+
+            subprocess.run(
+                [
+                    "git",
+                    "--git-dir",
+                    str(Config.repositories_path / target_data.owner_username / target_data.reponame),
+                    "update-ref",
+                    "-m",
+                    merge_message,
+                    target_branch_ref_name,
+                    str(merge_oid),
+                    str(target_branch_ref.target),
+                ],
+                check=True,
+                capture_output=True,
+            )
 
 
 class GetBranchesResponse(TemplateData):

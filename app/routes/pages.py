@@ -165,7 +165,7 @@ class PullRequestsPageData(TemplateData):
     username: str
     branches: list[str] = []
     pull_requests: list[PullRequest] = []
-    source_repos: list[RepositoryPageView] = []
+    source_repositories: list[RepositoryPageView] = []
 
 
 @router.get("/{username}/{reponame}/pull-requests", name="repository_pull_requests_page")
@@ -200,7 +200,7 @@ async def pull_requests_page(
         respository = pygit2.Repository(Config.repositories_path / username / reponame)
 
         data.branches = [b for b in respository.branches.local]
-        data.source_repos = [
+        data.source_repositories = [
             *await RepositoryPageView.select_by_parent_and_user_id(
                 conn,
                 data.repository.repository_id,
