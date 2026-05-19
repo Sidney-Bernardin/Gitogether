@@ -29,7 +29,13 @@
         <div class="diff" data-diff="{{ diff }}"></div>
     {% endif %}
 
-    <button hx-patch="{{ url_for('complete_pull_request', pull_request_id=pull_request.pull_request_id) }}">Merge</button>
+    <form
+        id="complete"
+        hx-patch="{{ url_for('complete_pull_request', pull_request_id=pull_request.pull_request_id) }}"
+        hx-swap="none"
+    >
+        <input type="submit" name="submit" value="Complete">
+    </form>
 </div>
 {% endblock %}
 

@@ -187,7 +187,7 @@ async def create_pull_request(
 
 @router.patch("/pull-requests/{pull_request_id}/complete", name="complete_pull_request")
 async def complete_pull_request(
-    req: Request,
+    res: Response,
     session: DepSession,
     pull_request_id: str,
 ):
@@ -200,11 +200,11 @@ async def complete_pull_request(
             # Get the pull-request.
             pull_req = await PullRequest.select_by_id(conn, UUID(pull_request_id))
             if not pull_req:
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+                raise RequestValidationError([PydanticCustomError("pull_request_not_found", "This pull request doesn't exist.")])
 
             # Ensure the user is the owner or a contributor.
             if pull_req.owner_id != session.user.user_id and not await Repository.has_contributor(conn, pull_req.target_id, session.user.user_id):
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+                raise RequestValidationError([PydanticCustomError("unauthorized", "You're not authorized to complete this pull request.")])
 
             target_data = await RepositoryPageView.select_by_id(conn, pull_req.target_id)
             if not target_data:
@@ -233,11 +233,7 @@ async def complete_pull_request(
             merge_oid: pygit2.Oid | str = ""
             merge_message = ""
 
-            if analasis & pygit2.GIT_MERGE_ANALYSIS_UP_TO_DATE:
-                print("Already up to date")
-                return
-
-            elif analasis & pygit2.GIT_MERGE_ANALYSIS_FASTFORWARD:
+            if analasis & pygit2.GIT_MERGE_ANALYSIS_FASTFORWARD:
                 print("Can be fast-forwarded")
                 merge_oid = source_branch_ref.target
                 merge_message = f"Merge {pull_req.source_branch} into {pull_req.target_branch}"
@@ -248,7 +244,7 @@ async def complete_pull_request(
                 index = target.merge_commits(target_branch_ref.target, source_branch_ref.target)
                 if index.conflicts:
                     print("Conflicts detected")
-                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Merge conflicts detected.")
+                    raise RequestValidationError([PydanticCustomError("merge_conflicts_deteted", "Merge conflicts detected.")])
 
                 tree_oid = index.write_tree(target)
 
@@ -260,21 +256,25 @@ async def complete_pull_request(
                     [target_branch_ref.target, source_branch_ref.target],
                 )
 
-            subprocess.run(
-                [
-                    "git",
-                    "--git-dir",
-                    str(Config.repositories_path / target_data.owner_username / target_data.reponame),
-                    "update-ref",
-                    "-m",
-                    merge_message,
-                    target_branch_ref_name,
-                    str(merge_oid),
-                    str(target_branch_ref.target),
-                ],
-                check=True,
-                capture_output=True,
-            )
+            if not (analasis & pygit2.GIT_MERGE_ANALYSIS_UP_TO_DATE):
+                print("Already up to date")
+                subprocess.run(
+                    [
+                        "git",
+                        "--git-dir",
+                        str(Config.repositories_path / target_data.owner_username / target_data.reponame),
+                        "update-ref",
+                        "-m",
+                        merge_message,
+                        target_branch_ref_name,
+                        str(merge_oid),
+                        str(target_branch_ref.target),
+                    ],
+                    check=True,
+                    capture_output=True,
+                )
+
+            res.headers["HX-Redirect"] = f"/{target_data.owner_username}/{target_data.reponame}/code/{pull_req.target_branch}"
 
 
 class GetBranchesResponse(TemplateData):

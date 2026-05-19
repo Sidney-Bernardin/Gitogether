@@ -30,7 +30,6 @@ document
   );
 
 const diff = document.querySelectorAll(".diff").forEach((diff) => {
-  console.log(diff);
   diff2htmlUi = new Diff2HtmlUI(diff, diff.dataset.diff, {
     drawFileList: true,
     matching: "lines",

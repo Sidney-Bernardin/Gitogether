@@ -55,13 +55,7 @@ async def signin(res: Response, form: Annotated[SigninForm, Form()]):
 
         user = await User.select_by_username(conn, form.username)
         if not user or not bcrypt.checkpw(form.password.encode(), user.password):
-            raise RequestValidationError(
-                [
-                    PydanticCustomError(
-                        "invalid_username_or_password", "Invalid username or password."
-                    )
-                ]
-            )
+            raise RequestValidationError([PydanticCustomError("invalid_username_or_password", "Invalid username or password.")])
 
     set_new_session(res, user)
     res.headers["HX-Redirect"] = "/"
