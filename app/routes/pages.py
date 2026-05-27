@@ -3,18 +3,14 @@ from uuid import UUID
 
 import pygit2
 import pygit2.enums
-
+from asyncpg import Connection
 from fastapi import APIRouter, HTTPException, Request, Response, status
 
-from app.postgres import (
-    Connection,
-    acquire,
-    Repository,
-    RepositoryPageView,
-    UserPageView,
-    PullRequest,
-)
-
+from app.postgres import acquire
+from app.postgres.users import UserPageView
+from app.postgres.repositories import Repository, RepositoryPageView
+from app.postgres.pull_requests import PullRequest
+from app.postgres.misc import SearchResult
 from app.dependencies import (
     Config,
     DepRepositoryPage,
@@ -25,6 +21,7 @@ from app.dependencies import (
     ReponamePathParam,
     templates,
 )
+
 
 router = APIRouter()
 
@@ -48,6 +45,22 @@ def signup_page(req: Request):
 @router.get("/signin")
 def signin_page(req: Request):
     return templates.TemplateResponse("pages/signin.html", {"request": req})
+
+
+class SearchResultData(TemplateData):
+    search_results: list[SearchResult]
+
+
+@router.get("/search", name="search")
+async def search(req: Request, username: str = "", reponame: str = ""):
+    data = SearchResultData(req, "components/search_results.html")
+
+    async with acquire() as conn:
+        print(username, reponame)
+        data.search_results = await SearchResult.select_by_name_similarity(conn, username, reponame)
+        print(data.search_results)
+
+    return data()
 
 
 class UserPageData(TemplateData):

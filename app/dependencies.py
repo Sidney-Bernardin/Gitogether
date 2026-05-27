@@ -12,11 +12,9 @@ from fastapi.templating import Jinja2Templates
 from starlette.templating import _TemplateResponse
 
 from app.config import Config
-from app.postgres import (
-    Repository, RepositoryPageView,
-    User, UserPageView,
-    acquire,
-)
+from app.postgres import acquire
+from app.postgres.users import User, UserPageView
+from app.postgres.repositories import Repository, RepositoryPageView
 
 templates = Jinja2Templates(os.path.join(os.path.dirname(__file__), "ui"))
 

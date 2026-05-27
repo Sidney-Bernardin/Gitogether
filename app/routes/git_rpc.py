@@ -7,12 +7,16 @@ from fastapi.responses import StreamingResponse
 from app.config import Config
 from app.dependencies import ReponamePathParam, UsernamePathParam, git_auth
 
+
 router = APIRouter()
 
 
 @router.get("/{username}/{reponame}/info/refs")
 async def repo_info(
-    _: git_auth, username: UsernamePathParam, reponame: ReponamePathParam, service: str
+    _: git_auth,
+    username: UsernamePathParam,
+    reponame: ReponamePathParam,
+    service: str,
 ):
     try:
         stdout = subprocess.run(

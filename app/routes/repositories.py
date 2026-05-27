@@ -1,19 +1,20 @@
 import subprocess
-import pygit2
-
 from datetime import datetime
 from typing import Annotated
 from asyncpg import Connection
 from uuid import UUID, uuid4
 
+import pygit2
 from pydantic import BaseModel, Field
 from pydantic_core import PydanticCustomError
-
 from fastapi import APIRouter, Form, HTTPException, Request, Response, status
 from fastapi.exceptions import RequestValidationError
 
 from app.dependencies import Config, TemplateData, DepSession, reponame_regex
-from app.postgres import Repository, RepositoryPageView, PullRequest, acquire
+from app.postgres import acquire
+from app.postgres.repositories import Repository, RepositoryPageView
+from app.postgres.pull_requests import PullRequest
+
 
 router = APIRouter(prefix="/repositories")
 

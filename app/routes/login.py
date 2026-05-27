@@ -1,19 +1,20 @@
-import bcrypt
+from typing import Annotated
 import uuid
 import jwt
+from datetime import datetime, timezone, timedelta
 
-from typing import Annotated
+import bcrypt
 from pydantic import BaseModel, Field
 from pydantic_core import PydanticCustomError
-from datetime import datetime, timezone, timedelta
 from asyncpg import Connection
-
 from fastapi import APIRouter, Form, Response
 from fastapi.exceptions import RequestValidationError
 
-from app.postgres import acquire, User
+from app.postgres import acquire
+from app.postgres.users import User
 from app.config import Config
 from app.dependencies import username_regex
+
 
 router = APIRouter()
 

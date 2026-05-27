@@ -1,9 +1,10 @@
 from typing import Self
 from uuid import UUID
+
 from asyncpg import Connection
 from pydantic.dataclasses import dataclass
 
-from .postgres import fetchrow
+from .utils import fetchrow
 
 
 @dataclass
@@ -25,22 +26,18 @@ class User:
 
     @classmethod
     async def is_username_taken(cls, c: Connection, username: str) -> bool:
-        return (
-            await c.fetchrow(
-                """
+        return await c.fetchrow(
+            """
                 SELECT 1 FROM users
                 WHERE username = $1
                 """,
-                username,
-            )
-            is not None
-        )
+            username,
+        ) is not None
 
     @classmethod
     async def select_by_username(cls, c: Connection, username: str) -> Self | None:
         return await fetchrow(
-            c,
-            cls,
+            c, cls,
             """
             SELECT user_id, username, password
             FROM users
@@ -58,8 +55,7 @@ class UserPageView:
     @classmethod
     async def select_by_id(cls, c: Connection, user_id: UUID) -> Self | None:
         return await fetchrow(
-            c,
-            cls,
+            c, cls,
             """
             SELECT user_id, username
             FROM users
@@ -71,8 +67,7 @@ class UserPageView:
     @classmethod
     async def select_by_username(cls, c: Connection, username: str) -> Self | None:
         return await fetchrow(
-            c,
-            cls,
+            c, cls,
             """
             SELECT user_id, username
             FROM users

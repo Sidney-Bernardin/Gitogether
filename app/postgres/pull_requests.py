@@ -1,10 +1,11 @@
-from datetime import datetime
 from typing import Self
-from pydantic.dataclasses import dataclass
 from uuid import UUID
+from datetime import datetime
+
+from pydantic.dataclasses import dataclass
 from asyncpg import Connection
 
-from .postgres import fetchrow, fetchrows
+from .utils import fetchrow, fetchrows
 
 
 @dataclass
@@ -49,8 +50,7 @@ class PullRequest:
     @classmethod
     async def select_by_id(cls, c: Connection, pull_request_id: UUID) -> Self | None:
         return await fetchrow(
-            c,
-            PullRequest,
+            c, cls,
             """
             SELECT
                 pull_request_id,
@@ -66,8 +66,7 @@ class PullRequest:
     @classmethod
     async def select_by_target_id(cls, c: Connection, target_id: UUID) -> list[Self]:
         return await fetchrows(
-            c,
-            PullRequest,
+            c, cls,
             """
             SELECT
                 pull_request_id,
@@ -78,4 +77,44 @@ class PullRequest:
             WHERE target_id = $1
             """,
             target_id,
+        )
+
+
+@dataclass
+class PullRequestReviewer:
+    pull_request_id: UUID
+    reviewer_id: UUID
+
+    approval_required: bool
+
+    reviewer_username: str
+
+    async def insert(self, c: Connection) -> str:
+        return await c.execute(
+            """
+            INSERT INTO pull_request_reviewers
+                (pull_request_id, reviewer_id, approval_required)
+            VALUES ($1, $2, $3)
+            """,
+            self.pull_request_id,
+            self.reviewer_id,
+            self.approval_required,
+        )
+
+    @classmethod
+    async def select_by_pull_request_id(cls, c: Connection, pull_request_id: UUID) -> list[Self]:
+        return await fetchrows(
+            c, cls,
+            """
+            SELECT
+                pr.pull_request_id,
+                pr.reviewer_id,
+                pr.approval_required,
+
+                u.username as reviewer_username
+            FROM pull_request_reviewers
+            LEFT JOIN users u ON u.user_id = pr.reviewer_id
+            WHERE pull_request_id = $1
+            """,
+            pull_request_id,
         )

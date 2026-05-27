@@ -1,10 +1,11 @@
 from typing import Self
-from datetime import datetime
-from pydantic.dataclasses import dataclass
 from uuid import UUID
+from datetime import datetime
+
+from pydantic.dataclasses import dataclass
 from asyncpg import Connection
 
-from .postgres import fetchrows, fetchrow
+from .utils import fetchrows, fetchrow
 
 
 @dataclass
@@ -48,38 +49,31 @@ class Repository:
 
     @classmethod
     async def exists(cls, c: Connection, repository_id: UUID) -> bool:
-        return (
-            await c.fetchrow(
-                """
+        return await c.fetchrow(
+            """
                 SELECT 1 FROM repositories
                 WHERE repository_id = $1
                 """,
-                repository_id,
-            )
-            is not None
-        )
+            repository_id,
+        ) is not None
 
     @classmethod
     async def has_contributor(cls, c: Connection, repository_id: UUID, user_id: UUID) -> bool:
-        return (
-            await c.fetchrow(
-                """
+        return await c.fetchrow(
+            """
                 SELECT 1 FROM repository_contributors
                 WHERE
                     repository_id = $1 AND
                     user_id = $2
                 """,
-                repository_id,
-                user_id,
-            )
-            is not None
-        )
+            repository_id,
+            user_id,
+        ) is not None
 
     @classmethod
     async def is_names_taken(cls, c: Connection, username: str, reponame: str) -> bool:
-        return (
-            await c.fetchrow(
-                """
+        return await c.fetchrow(
+            """
                 SELECT 1 FROM repositories
                 WHERE
                     reponame = $1 AND
@@ -88,17 +82,14 @@ class Repository:
                         WHERE username = $2 AND user_id = repositories.owner_id
                     )
                 """,
-                reponame,
-                username,
-            )
-            is not None
-        )
+            reponame,
+            username,
+        ) is not None
 
     @classmethod
     async def select_by_names(cls, c: Connection, username: str, reponame: str) -> Self | None:
         return await fetchrow(
-            c,
-            cls,
+            c, cls,
             """
             SELECT
                 repository_id,
@@ -118,15 +109,9 @@ class Repository:
         )
 
     @classmethod
-    async def select_by_owner_id(
-        cls,
-        c: Connection,
-        owner_id: UUID,
-        public_only: bool,
-    ) -> list[Self]:
+    async def select_by_owner_id(cls, c: Connection, owner_id: UUID, public_only: bool) -> list[Self]:
         return await fetchrows(
-            c,
-            cls,
+            c, cls,
             """
             SELECT
                 repository_id,
@@ -143,15 +128,9 @@ class Repository:
         )
 
     @classmethod
-    async def select_by_contributor_id(
-        cls,
-        c: Connection,
-        contributor_id: UUID,
-        public_only: bool,
-    ) -> list[Self]:
+    async def select_by_contributor_id(cls, c: Connection, contributor_id: UUID, public_only: bool) -> list[Self]:
         return await fetchrows(
-            c,
-            cls,
+            c, cls,
             """
             SELECT
                 repository_id,
@@ -191,8 +170,7 @@ class RepositoryPageView:
     @classmethod
     async def select_by_id(cls, c: Connection, repository_id: UUID) -> Self | None:
         return await fetchrow(
-            c,
-            cls,
+            c, cls,
             """
             SELECT
                 r.repository_id, r.reponame, r.description, r.stars, r.private, r.tags,
@@ -217,8 +195,7 @@ class RepositoryPageView:
     @classmethod
     async def select_by_names(cls, c: Connection, username: str, reponame: str) -> Self | None:
         return await fetchrow(
-            c,
-            cls,
+            c, cls,
             """
             SELECT
                 r.repository_id, r.reponame, r.description, r.stars, r.private, r.tags,
@@ -245,8 +222,7 @@ class RepositoryPageView:
     @classmethod
     async def select_by_parent_id(cls, c: Connection, parent_id: UUID) -> list[Self]:
         return await fetchrows(
-            c,
-            cls,
+            c, cls,
             """
             SELECT
                 r.repository_id, r.reponame, r.description, r.stars, r.private, r.tags,
@@ -276,8 +252,7 @@ class RepositoryPageView:
         contributor_id: UUID,
     ) -> list[Self]:
         return await fetchrows(
-            c,
-            cls,
+            c, cls,
             """
             SELECT
                 r.repository_id, r.reponame, r.description, r.stars, r.private, r.tags,

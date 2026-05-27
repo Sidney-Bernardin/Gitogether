@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
 CREATE TABLE users (
     user_id uuid PRIMARY KEY,
 
@@ -38,11 +40,22 @@ CREATE TABLE pull_requests (
     target_id uuid NOT NULL REFERENCES repositories(repository_id)
 );
 
+CREATE TABLE pull_request_reviewers (
+    pull_request_id uuid REFERENCES pull_requests(pull_request_id),
+    reviewer_id uuid REFERENCES users(user_id),
+
+    approval_required boolean NOT NULL,
+
+    PRIMARY KEY (pull_request_id, reviewer_id)
+);
+
+CREATE TYPE repository_contributor_role AS ENUM ('admin', 'contributor');
+
 CREATE TABLE repository_contributors (
     repository_id uuid REFERENCES repositories(repository_id),
     user_id uuid REFERENCES users(user_id),
 
-    role text NOT NULL,
+    role repository_contributor_role NOT NULL,
 
     PRIMARY KEY (repository_id, user_id)
 );
