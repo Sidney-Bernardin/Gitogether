@@ -50,12 +50,14 @@
                         forks
                     </a>
                 </li>
-                <li class="{{ 'active' if request.scope.get("route").name == 'repository_settings_page' }}">
-                    <a href="{{ url_for("repository_code_page", username=username, reponame=repository.reponame) }}">
-                        <i class="fa-solid fa-gear"></i>
-                        settings
-                    </a>
-                </li>
+                {% if is_owner %}
+                    <li class="{{ 'active' if request.scope.get("route").name == 'repository_settings_page' }}">
+                        <a href="{{ url_for("repository_code_page", username=username, reponame=repository.reponame) }}">
+                            <i class="fa-solid fa-gear"></i>
+                            settings
+                        </a>
+                    </li>
+                {% endif %}
             </ul>
         </div>
     {% endif %}

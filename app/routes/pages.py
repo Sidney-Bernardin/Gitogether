@@ -104,6 +104,7 @@ class RepositoryPageData(TemplateData):
     session: Session | None
     repository: RepositoryPageView | None = None
     username: str
+    is_owner: bool
     file_path: str
     file_path_sufix: str
     branches: list[str] | None = None
@@ -132,6 +133,7 @@ async def get_repo(
     data.session = session
     data.repository = repository
     data.username = username
+    data.is_owner = session is not None and session.user.username == username
     data.file_path = path
     data.file_path_sufix = f"{path}/" if path else ""
 
@@ -176,6 +178,7 @@ class PullRequestsPageData(TemplateData):
     session: Session | None
     repository: RepositoryPageView | None = None
     username: str
+    is_owner: bool
     branches: list[str] = []
     pull_requests: list[PullRequest] = []
     source_repositories: list[RepositoryPageView] = []
@@ -184,7 +187,7 @@ class PullRequestsPageData(TemplateData):
 @router.get("/{username}/{reponame}/pull-requests", name="repository_pull_requests_page")
 async def pull_requests_page(
     req: Request,
-    response: Response,
+    res: Response,
     session: DepSession,
     repository: DepRepositoryPage,
     username: UsernamePathParam,
@@ -193,7 +196,7 @@ async def pull_requests_page(
     data = PullRequestsPageData(req, "pages/pull_requests.html")
 
     if not session:
-        response.headers["HX-Redirect"] = "/signin"
+        res.headers["HX-Redirect"] = "/signin"
         return
 
     if not repository:
@@ -202,6 +205,7 @@ async def pull_requests_page(
     data.session = session
     data.repository = repository
     data.username = username
+    data.is_owner = session is not None and session.user.username == username
 
     async with acquire() as conn:
         conn: Connection
@@ -312,3 +316,7 @@ async def forks_page(
         data.forks = await RepositoryPageView.select_by_parent_id(conn, data.repository.repository_id)
 
     return data()
+
+
+class SettingsPageData(TemplateData):
+    session: Session

@@ -38,6 +38,8 @@
         {% if not session %}
             <a href="/signin">Sign In</a>
             <a href="/signup">Sign Up</a>
+        {% else %}
+            <button hx-delete="/signout">Sign Out</button>
         {% endif %} 
     </ul>
 </nav>

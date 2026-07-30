@@ -62,7 +62,7 @@ async def signin(res: Response, form: Annotated[SigninForm, Form()]):
     res.headers["HX-Redirect"] = "/"
 
 
-@router.get("/signout")
+@router.delete("/signout")
 def signout(res: Response):
     res.delete_cookie("session", path="/")
     res.headers["HX-Redirect"] = "/"
