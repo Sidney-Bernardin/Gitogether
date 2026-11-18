@@ -1,0 +1,1122 @@
+{
+  "type": "base",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "61877f46-5019-4b32-8bf5-2517700d9536",
+  "prevIds": [
+    "00000000-0000-0000-0000-000000000000"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_enum",
+      "statementTarget": [
+        "enum",
+        "public",
+        "contributor_role"
+      ],
+      "writes": [
+        "s|enum|public.contributor_role",
+        "n|enum|public.contributor_role",
+        "e|enum|public.contributor_role",
+        "n|type|public.contributor_role"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "pr_reviewers"
+      ],
+      "writes": [
+        "s|tbl|public.pr_reviewers",
+        "n|tbl|public.pr_reviewers",
+        "e|tbl|public.pr_reviewers",
+        "n|rel|public.pr_reviewers",
+        "n|type|public.pr_reviewers",
+        "n|rel|public.pr_reviewers_pkey"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "pull_requests"
+      ],
+      "writes": [
+        "s|tbl|public.pull_requests",
+        "n|tbl|public.pull_requests",
+        "e|tbl|public.pull_requests",
+        "n|rel|public.pull_requests",
+        "n|type|public.pull_requests",
+        "n|rel|public.pull_requests_pkey"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "repositories"
+      ],
+      "writes": [
+        "s|tbl|public.repositories",
+        "n|tbl|public.repositories",
+        "e|tbl|public.repositories",
+        "n|rel|public.repositories",
+        "n|type|public.repositories",
+        "n|rel|public.repositories_pkey"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "repository_contributors"
+      ],
+      "writes": [
+        "s|tbl|public.repository_contributors",
+        "n|tbl|public.repository_contributors",
+        "e|tbl|public.repository_contributors",
+        "n|rel|public.repository_contributors",
+        "n|type|public.repository_contributors",
+        "n|rel|public.repository_contributors_pkey"
+      ],
+      "reads": [
+        "n|sch|public",
+        "n|enum|public.contributor_role"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "users"
+      ],
+      "writes": [
+        "s|tbl|public.users",
+        "n|tbl|public.users",
+        "e|tbl|public.users",
+        "n|rel|public.users",
+        "n|type|public.users",
+        "n|rel|public.users_pkey",
+        "n|rel|public.users_username_key"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "repositories",
+        "reponame"
+      ],
+      "writes": [
+        "s|idx|public.reponame",
+        "n|idx|public.reponame",
+        "e|idx|public.reponame",
+        "n|rel|public.reponame"
+      ],
+      "reads": [
+        "n|tbl|public.repositories",
+        "n|sch|public",
+        "n|col|public.repositories.reponame"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "users",
+        "username"
+      ],
+      "writes": [
+        "s|idx|public.username",
+        "n|idx|public.username",
+        "e|idx|public.username",
+        "n|rel|public.username"
+      ],
+      "reads": [
+        "n|tbl|public.users",
+        "n|sch|public",
+        "n|col|public.users.username"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "pr_reviewers"
+      ],
+      "writes": [
+        "s|fk|public.pr_reviewers.pr_reviewers_pull_request_id_pull_requests_id_fkey",
+        "n|fk|public.pr_reviewers.pr_reviewers_pull_request_id_pull_requests_id_fkey",
+        "e|fk|public.pr_reviewers.pr_reviewers_pull_request_id_pull_requests_id_fkey",
+        "n|con|public.pr_reviewers.pr_reviewers_pull_request_id_pull_requests_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.pr_reviewers",
+        "n|sch|public",
+        "n|tbl|public.pull_requests",
+        "n|sch|public",
+        "n|col|public.pr_reviewers.pull_request_id",
+        "n|col|public.pull_requests.id",
+        "e|uniqueness|public.pull_requests.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "pr_reviewers"
+      ],
+      "writes": [
+        "s|fk|public.pr_reviewers.pr_reviewers_reviewer_id_users_id_fkey",
+        "n|fk|public.pr_reviewers.pr_reviewers_reviewer_id_users_id_fkey",
+        "e|fk|public.pr_reviewers.pr_reviewers_reviewer_id_users_id_fkey",
+        "n|con|public.pr_reviewers.pr_reviewers_reviewer_id_users_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.pr_reviewers",
+        "n|sch|public",
+        "n|tbl|public.users",
+        "n|sch|public",
+        "n|col|public.pr_reviewers.reviewer_id",
+        "n|col|public.users.id",
+        "e|uniqueness|public.users.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "pull_requests"
+      ],
+      "writes": [
+        "s|fk|public.pull_requests.pull_requests_owner_id_users_id_fkey",
+        "n|fk|public.pull_requests.pull_requests_owner_id_users_id_fkey",
+        "e|fk|public.pull_requests.pull_requests_owner_id_users_id_fkey",
+        "n|con|public.pull_requests.pull_requests_owner_id_users_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.pull_requests",
+        "n|sch|public",
+        "n|tbl|public.users",
+        "n|sch|public",
+        "n|col|public.pull_requests.owner_id",
+        "n|col|public.users.id",
+        "e|uniqueness|public.users.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "pull_requests"
+      ],
+      "writes": [
+        "s|fk|public.pull_requests.pull_requests_source_id_repositories_id_fkey",
+        "n|fk|public.pull_requests.pull_requests_source_id_repositories_id_fkey",
+        "e|fk|public.pull_requests.pull_requests_source_id_repositories_id_fkey",
+        "n|con|public.pull_requests.pull_requests_source_id_repositories_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.pull_requests",
+        "n|sch|public",
+        "n|tbl|public.repositories",
+        "n|sch|public",
+        "n|col|public.pull_requests.source_id",
+        "n|col|public.repositories.id",
+        "e|uniqueness|public.repositories.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "pull_requests"
+      ],
+      "writes": [
+        "s|fk|public.pull_requests.pull_requests_target_id_repositories_id_fkey",
+        "n|fk|public.pull_requests.pull_requests_target_id_repositories_id_fkey",
+        "e|fk|public.pull_requests.pull_requests_target_id_repositories_id_fkey",
+        "n|con|public.pull_requests.pull_requests_target_id_repositories_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.pull_requests",
+        "n|sch|public",
+        "n|tbl|public.repositories",
+        "n|sch|public",
+        "n|col|public.pull_requests.target_id",
+        "n|col|public.repositories.id",
+        "e|uniqueness|public.repositories.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "repositories"
+      ],
+      "writes": [
+        "s|fk|public.repositories.repositories_parent_id_repositories_parent_id_fkey",
+        "n|fk|public.repositories.repositories_parent_id_repositories_parent_id_fkey",
+        "e|fk|public.repositories.repositories_parent_id_repositories_parent_id_fkey",
+        "n|con|public.repositories.repositories_parent_id_repositories_parent_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.repositories",
+        "n|sch|public",
+        "n|tbl|public.repositories",
+        "n|sch|public",
+        "n|col|public.repositories.parent_id",
+        "n|col|public.repositories.parent_id",
+        "e|uniqueness|public.repositories.parent_id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "repositories"
+      ],
+      "writes": [
+        "s|fk|public.repositories.repositories_owner_id_users_id_fkey",
+        "n|fk|public.repositories.repositories_owner_id_users_id_fkey",
+        "e|fk|public.repositories.repositories_owner_id_users_id_fkey",
+        "n|con|public.repositories.repositories_owner_id_users_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.repositories",
+        "n|sch|public",
+        "n|tbl|public.users",
+        "n|sch|public",
+        "n|col|public.repositories.owner_id",
+        "n|col|public.users.id",
+        "e|uniqueness|public.users.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "repository_contributors"
+      ],
+      "writes": [
+        "s|fk|public.repository_contributors.repository_contributors_repository_id_repositories_id_fkey",
+        "n|fk|public.repository_contributors.repository_contributors_repository_id_repositories_id_fkey",
+        "e|fk|public.repository_contributors.repository_contributors_repository_id_repositories_id_fkey",
+        "n|con|public.repository_contributors.repository_contributors_repository_id_repositories_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.repository_contributors",
+        "n|sch|public",
+        "n|tbl|public.repositories",
+        "n|sch|public",
+        "n|col|public.repository_contributors.repository_id",
+        "n|col|public.repositories.id",
+        "e|uniqueness|public.repositories.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "repository_contributors"
+      ],
+      "writes": [
+        "s|fk|public.repository_contributors.repository_contributors_contributor_id_users_id_fkey",
+        "n|fk|public.repository_contributors.repository_contributors_contributor_id_users_id_fkey",
+        "e|fk|public.repository_contributors.repository_contributors_contributor_id_users_id_fkey",
+        "n|con|public.repository_contributors.repository_contributors_contributor_id_users_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.repository_contributors",
+        "n|sch|public",
+        "n|tbl|public.users",
+        "n|sch|public",
+        "n|col|public.repository_contributors.contributor_id",
+        "n|col|public.users.id",
+        "e|uniqueness|public.users.id"
+      ]
+    }
+  ],
+  "ddl": [
+    {
+      "schema": "public",
+      "name": "pr_reviewers",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "public",
+      "name": "pull_requests",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "public",
+      "name": "repositories",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "public",
+      "name": "repository_contributors",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "public",
+      "name": "users",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "public",
+      "name": "contributor_role",
+      "values": [
+        "admin",
+        "developer"
+      ],
+      "entityType": "enums"
+    },
+    {
+      "schema": "public",
+      "table": "pr_reviewers",
+      "name": "id",
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": {
+        "type": "always",
+        "name": "pr_reviewers_id_seq",
+        "increment": "1",
+        "startWith": "1",
+        "minValue": "1",
+        "maxValue": "9223372036854775807",
+        "cache": 1,
+        "cycle": false
+      },
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "pr_reviewers",
+      "name": "pull_request_id",
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "pr_reviewers",
+      "name": "reviewer_id",
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "pull_requests",
+      "name": "id",
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": {
+        "type": "always",
+        "name": "pull_requests_id_seq",
+        "increment": "1",
+        "startWith": "1",
+        "minValue": "1",
+        "maxValue": "9223372036854775807",
+        "cache": 1,
+        "cycle": false
+      },
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "pull_requests",
+      "name": "title",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "pull_requests",
+      "name": "description",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "pull_requests",
+      "name": "source_branch",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "pull_requests",
+      "name": "target_branch",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "pull_requests",
+      "name": "created_at",
+      "type": "timestamp",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "pull_requests",
+      "name": "updated_at",
+      "type": "timestamp",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "pull_requests",
+      "name": "owner_id",
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "pull_requests",
+      "name": "source_id",
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "pull_requests",
+      "name": "target_id",
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "repositories",
+      "name": "id",
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": {
+        "type": "always",
+        "name": "repositories_id_seq",
+        "increment": "1",
+        "startWith": "1",
+        "minValue": "1",
+        "maxValue": "9223372036854775807",
+        "cache": 1,
+        "cycle": false
+      },
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "repositories",
+      "name": "reponame",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "repositories",
+      "name": "description",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "repositories",
+      "name": "private",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "repositories",
+      "name": "stars",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "repositories",
+      "name": "tags",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 1,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "repositories",
+      "name": "created_at",
+      "type": "timestamp",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "repositories",
+      "name": "updated_at",
+      "type": "timestamp",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "repositories",
+      "name": "parent_id",
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "repositories",
+      "name": "owner_id",
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "repository_contributors",
+      "name": "repository_id",
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "repository_contributors",
+      "name": "contributor_id",
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "repository_contributors",
+      "name": "role",
+      "type": "contributor_role",
+      "typeSchema": "public",
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "users",
+      "name": "id",
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": {
+        "type": "always",
+        "name": "users_id_seq",
+        "increment": "1",
+        "startWith": "1",
+        "minValue": "1",
+        "maxValue": "9223372036854775807",
+        "cache": 1,
+        "cycle": false
+      },
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "users",
+      "name": "username",
+      "type": "varchar(255)",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "users",
+      "name": "password_hash",
+      "type": "bytea",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "users",
+      "name": "password_salt",
+      "type": "bytea",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "users",
+      "name": "created_at",
+      "type": "timestamp",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "users",
+      "name": "updated_at",
+      "type": "timestamp",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "repositories",
+      "name": "reponame",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "reponame",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "public",
+      "table": "users",
+      "name": "username",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "username",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "public",
+      "table": "pr_reviewers",
+      "name": "pr_reviewers_pull_request_id_pull_requests_id_fkey",
+      "nameExplicit": false,
+      "columns": [
+        "pull_request_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "pull_requests",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "entityType": "fks"
+    },
+    {
+      "schema": "public",
+      "table": "pr_reviewers",
+      "name": "pr_reviewers_reviewer_id_users_id_fkey",
+      "nameExplicit": false,
+      "columns": [
+        "reviewer_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "entityType": "fks"
+    },
+    {
+      "schema": "public",
+      "table": "pull_requests",
+      "name": "pull_requests_owner_id_users_id_fkey",
+      "nameExplicit": false,
+      "columns": [
+        "owner_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "entityType": "fks"
+    },
+    {
+      "schema": "public",
+      "table": "pull_requests",
+      "name": "pull_requests_source_id_repositories_id_fkey",
+      "nameExplicit": false,
+      "columns": [
+        "source_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "repositories",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "entityType": "fks"
+    },
+    {
+      "schema": "public",
+      "table": "pull_requests",
+      "name": "pull_requests_target_id_repositories_id_fkey",
+      "nameExplicit": false,
+      "columns": [
+        "target_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "repositories",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "entityType": "fks"
+    },
+    {
+      "schema": "public",
+      "table": "repositories",
+      "name": "repositories_parent_id_repositories_parent_id_fkey",
+      "nameExplicit": false,
+      "columns": [
+        "parent_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "repositories",
+      "columnsTo": [
+        "parent_id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "entityType": "fks"
+    },
+    {
+      "schema": "public",
+      "table": "repositories",
+      "name": "repositories_owner_id_users_id_fkey",
+      "nameExplicit": false,
+      "columns": [
+        "owner_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "entityType": "fks"
+    },
+    {
+      "schema": "public",
+      "table": "repository_contributors",
+      "name": "repository_contributors_repository_id_repositories_id_fkey",
+      "nameExplicit": false,
+      "columns": [
+        "repository_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "repositories",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "entityType": "fks"
+    },
+    {
+      "schema": "public",
+      "table": "repository_contributors",
+      "name": "repository_contributors_contributor_id_users_id_fkey",
+      "nameExplicit": false,
+      "columns": [
+        "contributor_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "entityType": "fks"
+    },
+    {
+      "schema": "public",
+      "table": "repository_contributors",
+      "name": "repository_contributors_pkey",
+      "columns": [
+        "repository_id",
+        "contributor_id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "public",
+      "table": "pr_reviewers",
+      "name": "pr_reviewers_pkey",
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "public",
+      "table": "pull_requests",
+      "name": "pull_requests_pkey",
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "public",
+      "table": "repositories",
+      "name": "repositories_pkey",
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "public",
+      "table": "users",
+      "name": "users_pkey",
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "public",
+      "table": "users",
+      "name": "users_username_key",
+      "nameExplicit": false,
+      "columns": [
+        "username"
+      ],
+      "nullsNotDistinct": false,
+      "entityType": "uniques"
+    }
+  ]
+}

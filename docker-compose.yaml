@@ -1,19 +1,8 @@
 services:
 
-  gitogether:
-    container_name: gitogether
-    build:
-      dockerfile: Dockerfile
-    environment:
-      APP_POSTGRES_URL: postgresql://postgres:postgres@postgres:5432/postgres
-    ports:
-      - 8000:8000
-
   postgres:
     image: postgres:18.3
     environment:
       POSTGRES_PASSWORD: postgres
-    volumes:
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - 5433:5432
