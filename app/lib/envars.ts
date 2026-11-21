@@ -1,10 +1,10 @@
 import { z } from "zod"
 
 const envarsSchema = z.object({
-  SECRET: z.string(),
+  JWT_SECRET: z.string(),
 
-  POSTGRES_URL: z.url(),
-  REDIS_URL: z.url(),
+  POSTGRES_DSN: z.url(),
+  REDIS_DSN: z.url(),
 
   REFRESH_TOKEN_EXPIRATION_SECONDS: z.coerce.number(),
   ACCESS_TOKEN_EXPIRATION_SECONDS: z.coerce.number(),
