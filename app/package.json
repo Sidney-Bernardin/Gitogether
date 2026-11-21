@@ -10,9 +10,13 @@
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.3.5",
+    "bcryptjs": "^3.0.3",
     "dotenv": "^18.0.10",
     "drizzle-orm": "^1.0.0-rc.5",
     "next": "16.4.6",
+    "node": "^27.0.0-alpha.0.1.1",
+    "npm": "^11.21.3",
+    "npx": "^10.2.2",
     "pg": "^8.23.1",
     "postcss": "^8.5.33",
     "react": "19.3.0",

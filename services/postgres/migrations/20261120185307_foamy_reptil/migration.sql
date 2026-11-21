@@ -1,0 +1,1 @@
+ALTER TABLE "repositories" ADD CONSTRAINT "repositories_reponame_key" UNIQUE("reponame");

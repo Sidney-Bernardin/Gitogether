@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "61877f46-5019-4b32-8bf5-2517700d9536",
+  "id": "76b2c9ab-da9d-4d87-baaf-b1ab3257cfbc",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -284,10 +284,10 @@
         "repositories"
       ],
       "writes": [
-        "s|fk|public.repositories.repositories_parent_id_repositories_parent_id_fkey",
-        "n|fk|public.repositories.repositories_parent_id_repositories_parent_id_fkey",
-        "e|fk|public.repositories.repositories_parent_id_repositories_parent_id_fkey",
-        "n|con|public.repositories.repositories_parent_id_repositories_parent_id_fkey"
+        "s|fk|public.repositories.repositories_parent_id_repositories_id_fkey",
+        "n|fk|public.repositories.repositories_parent_id_repositories_id_fkey",
+        "e|fk|public.repositories.repositories_parent_id_repositories_id_fkey",
+        "n|con|public.repositories.repositories_parent_id_repositories_id_fkey"
       ],
       "reads": [
         "n|tbl|public.repositories",
@@ -295,8 +295,8 @@
         "n|tbl|public.repositories",
         "n|sch|public",
         "n|col|public.repositories.parent_id",
-        "n|col|public.repositories.parent_id",
-        "e|uniqueness|public.repositories.parent_id"
+        "n|col|public.repositories.id",
+        "e|uniqueness|public.repositories.id"
       ]
     },
     {
@@ -412,28 +412,6 @@
     {
       "schema": "public",
       "table": "pr_reviewers",
-      "name": "id",
-      "type": "bigint",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": {
-        "type": "always",
-        "name": "pr_reviewers_id_seq",
-        "increment": "1",
-        "startWith": "1",
-        "minValue": "1",
-        "maxValue": "9223372036854775807",
-        "cache": 1,
-        "cycle": false
-      },
-      "entityType": "columns"
-    },
-    {
-      "schema": "public",
-      "table": "pr_reviewers",
       "name": "pull_request_id",
       "type": "bigint",
       "typeSchema": null,
@@ -449,6 +427,32 @@
       "table": "pr_reviewers",
       "name": "reviewer_id",
       "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "pr_reviewers",
+      "name": "approved",
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "pr_reviewers",
+      "name": "approval_required",
+      "type": "boolean",
       "typeSchema": null,
       "notNull": true,
       "dimensions": 0,
@@ -715,7 +719,7 @@
       "name": "parent_id",
       "type": "bigint",
       "typeSchema": null,
-      "notNull": true,
+      "notNull": false,
       "dimensions": 0,
       "default": null,
       "generated": null,
@@ -767,7 +771,7 @@
       "name": "role",
       "type": "contributor_role",
       "typeSchema": "public",
-      "notNull": false,
+      "notNull": true,
       "dimensions": 0,
       "default": null,
       "generated": null,
@@ -813,19 +817,6 @@
       "schema": "public",
       "table": "users",
       "name": "password_hash",
-      "type": "bytea",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "entityType": "columns"
-    },
-    {
-      "schema": "public",
-      "table": "users",
-      "name": "password_salt",
       "type": "bytea",
       "typeSchema": null,
       "notNull": true,
@@ -917,7 +908,7 @@
         "id"
       ],
       "onUpdate": "NO ACTION",
-      "onDelete": "NO ACTION",
+      "onDelete": "CASCADE",
       "entityType": "fks"
     },
     {
@@ -934,7 +925,7 @@
         "id"
       ],
       "onUpdate": "NO ACTION",
-      "onDelete": "NO ACTION",
+      "onDelete": "CASCADE",
       "entityType": "fks"
     },
     {
@@ -951,7 +942,7 @@
         "id"
       ],
       "onUpdate": "NO ACTION",
-      "onDelete": "NO ACTION",
+      "onDelete": "CASCADE",
       "entityType": "fks"
     },
     {
@@ -968,7 +959,7 @@
         "id"
       ],
       "onUpdate": "NO ACTION",
-      "onDelete": "NO ACTION",
+      "onDelete": "CASCADE",
       "entityType": "fks"
     },
     {
@@ -985,13 +976,13 @@
         "id"
       ],
       "onUpdate": "NO ACTION",
-      "onDelete": "NO ACTION",
+      "onDelete": "CASCADE",
       "entityType": "fks"
     },
     {
       "schema": "public",
       "table": "repositories",
-      "name": "repositories_parent_id_repositories_parent_id_fkey",
+      "name": "repositories_parent_id_repositories_id_fkey",
       "nameExplicit": false,
       "columns": [
         "parent_id"
@@ -999,10 +990,10 @@
       "schemaTo": "public",
       "tableTo": "repositories",
       "columnsTo": [
-        "parent_id"
+        "id"
       ],
       "onUpdate": "NO ACTION",
-      "onDelete": "NO ACTION",
+      "onDelete": "SET NULL",
       "entityType": "fks"
     },
     {
@@ -1019,7 +1010,7 @@
         "id"
       ],
       "onUpdate": "NO ACTION",
-      "onDelete": "NO ACTION",
+      "onDelete": "CASCADE",
       "entityType": "fks"
     },
     {
@@ -1036,7 +1027,7 @@
         "id"
       ],
       "onUpdate": "NO ACTION",
-      "onDelete": "NO ACTION",
+      "onDelete": "CASCADE",
       "entityType": "fks"
     },
     {
@@ -1053,8 +1044,19 @@
         "id"
       ],
       "onUpdate": "NO ACTION",
-      "onDelete": "NO ACTION",
+      "onDelete": "CASCADE",
       "entityType": "fks"
+    },
+    {
+      "schema": "public",
+      "table": "pr_reviewers",
+      "name": "pr_reviewers_pkey",
+      "columns": [
+        "pull_request_id",
+        "reviewer_id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
     },
     {
       "schema": "public",
@@ -1063,16 +1065,6 @@
       "columns": [
         "repository_id",
         "contributor_id"
-      ],
-      "nameExplicit": false,
-      "entityType": "pks"
-    },
-    {
-      "schema": "public",
-      "table": "pr_reviewers",
-      "name": "pr_reviewers_pkey",
-      "columns": [
-        "id"
       ],
       "nameExplicit": false,
       "entityType": "pks"
