@@ -4,7 +4,7 @@ import { pgTable, varchar, bytea, bigint, timestamp, index, text, pgEnum, foreig
 export const contributorRole = pgEnum("contributor_role", ["admin", "developer"])
 
 export const users = pgTable("users", {
-  id: bigint({ mode: "number" }).generatedAlwaysAsIdentity().primaryKey(),
+  id: bigint({ mode: "number" }).generatedAlwaysAsIdentity().primaryKey(), // TODO: set mode to "bigint"
 
   username: varchar({ length: 255 }).notNull().unique(),
   password_hash: bytea().notNull(),
@@ -20,7 +20,7 @@ export const repositories = pgTable("repositories", {
 
   reponame: text().notNull().unique(),
   description: text().notNull(),
-  private: text().notNull(),
+  private: boolean().notNull(),
   stars: text().notNull(),
   tags: text().array().notNull(),
 
@@ -123,7 +123,7 @@ export const relations = defineRelations(
     users: {
       owned_repositories: r.many.repositories({
         from: r.users.id,
-        to: r.repositories.id,
+        to: r.repositories.owner_id,
       }),
       shared_repositories: r.many.repositories({
         from: r.users.id.through(r.repository_contributors.contributor_id),

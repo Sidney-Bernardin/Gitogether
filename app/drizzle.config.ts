@@ -5,6 +5,6 @@ export default defineConfig({
   schema: "./lib/db/schema.ts",
   out: "../services/postgres/migrations",
   dbCredentials: {
-    url: process.env.POSTGRES_URL!,
+    url: process.env.POSTGRES_DSN!,
   }
 })

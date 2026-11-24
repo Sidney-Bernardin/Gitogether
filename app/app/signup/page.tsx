@@ -2,7 +2,7 @@ import SignupForm from "@/components/SignupForm"
 import Link from "next/link"
 import { Suspense } from "react"
 
-export default async function Signup() {
+export default function Signup() {
   return (
     <div>
       <h1>Signup</h1>

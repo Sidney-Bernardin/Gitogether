@@ -9,14 +9,16 @@ export type FormError<T> = {
 
 export type FullUser = typeof users.$inferSelect
 
-export type AccessToken = {
+export type Session = {
+  id: string,
   userId: FullUser["id"],
   username: FullUser["username"],
   createdAt: FullUser["created_at"]
 }
 
-export function createAccessToken(u: Partial<FullUser> & Pick<FullUser, "id" | "username" | "created_at">): AccessToken {
+export function createSession(u: Partial<FullUser> & Pick<FullUser, "id" | "username" | "created_at">): Session {
   return {
+    id: crypto.randomUUID(),
     userId: u.id,
     username: u.username,
     createdAt: u.created_at,

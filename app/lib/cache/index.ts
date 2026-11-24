@@ -1,24 +1,24 @@
 import { createClient } from "redis"
 import { envars } from "../envars"
-import { AccessToken } from "../views"
+import { Session as Session } from "../views"
 
 export const cache = await createClient({ url: envars.REDIS_DSN }).connect()
 await cache.ping()
 
 
-const sessionKey = (refreshToken: string) => `session:${refreshToken}`
+const refreshTokenKey = (id: string) => `refresh_token:${id}`
 
 const queries = {
-  async setSession(refreshToken: string, accessToken: AccessToken): Promise<void> {
-    const key = sessionKey(refreshToken)
+  async setRefreshToken(refreshToken: Session): Promise<void> {
+    const key = refreshTokenKey(refreshToken.id)
     await cache.multi()
-      .hSet(key, accessToken)
+      .hSet(key, refreshToken)
       .expire(key, envars.REFRESH_TOKEN_EXPIRATION_SECONDS)
       .exec()
   },
 
-  async getSession(refreshToken: string): Promise<AccessToken> {
-    return await cache.hGetAll(sessionKey(refreshToken)) as unknown as AccessToken
+  async getRefreshToken(refreshTokenID: string): Promise<Session> {
+    return await cache.hGetAll(refreshTokenKey(refreshTokenID)) as unknown as Session
   },
 }
 

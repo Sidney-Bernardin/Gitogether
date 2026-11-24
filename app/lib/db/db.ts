@@ -2,7 +2,7 @@ import { drizzle, NodePgDatabase, NodePgTransaction } from "drizzle-orm/node-pos
 import { envars } from "../envars"
 import { relations, users } from "./schema"
 import { eq, sql } from "drizzle-orm"
-import { AccessToken, createAccessToken } from "../views"
+import { Session, createSession } from "../views"
 
 export const pg = drizzle(envars.POSTGRES_DSN, { relations })
 await pg.execute(sql`SELECT 1`)
@@ -12,14 +12,14 @@ type DB =
   | NodePgTransaction<typeof relations>
 
 const queries = {
-  async createUser(db: DB, user: typeof users.$inferInsert): Promise<AccessToken> {
+  async createUser(db: DB, user: typeof users.$inferInsert): Promise<Session> {
     const [newUser] = await db.insert(users).values(user).returning({
       id: users.id,
       username: users.username,
       created_at: users.created_at,
     })
 
-    return createAccessToken(newUser)
+    return createSession(newUser)
   },
 
   async usernameTaken(db: DB, username: string): Promise<boolean> {
@@ -42,6 +42,22 @@ const queries = {
         username: true,
         password_hash: true,
         created_at: true,
+      },
+      where: {
+        username: username,
+      }
+    })
+  },
+
+  async getRepositoriesByUser(db: DB, userID: number) {
+    return await db.query.repositories.findMany({
+      columns: {
+        id: true,
+        reponame: true,
+        stars: true,
+        private: true,
+        created_at: true,
+        updated_at: true,
       },
       where: {
         username: username,

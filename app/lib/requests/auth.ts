@@ -5,21 +5,20 @@ import * as z from "zod"
 import * as JWT from "jsonwebtoken"
 import cache from "../cache"
 import { envars } from "../envars"
-import { AccessToken, createAccessToken, FormError } from "../views"
+import { Session, FormError, createSession } from "../views"
 import { SigninForm, signinFormSchema, SignupForm, signupFormSchema } from "../commands"
 import { Result } from "../errors"
 import db, { pg } from "../db/db"
 import bcrypt from "bcryptjs"
+import { getRefreshToken } from "./utils"
 
 export async function refresh(): Promise<string | undefined> {
-  const cookieStore = await cookies()
-
-  const refreshToken = cookieStore.get("refreshToken")
+  const refreshToken = await getRefreshToken()
   if (!refreshToken)
     return undefined
 
-  const accessToken = await cache.getSession(refreshToken.value)
-  return signAccessToken(accessToken)
+  const session = await cache.getRefreshToken(refreshToken.id)
+  return signSession(session, envars.ACCESS_TOKEN_EXPIRATION_SECONDS)
 }
 
 export async function signup(formData: FormData): Promise<Result<string, FormError<SignupForm>>> {
@@ -29,7 +28,7 @@ export async function signup(formData: FormData): Promise<Result<string, FormErr
   if (form.error)
     return [undefined, z.flattenError(form.error)]
 
-  const [accessToken, err]: Result<AccessToken, FormError<SignupForm>> = await pg.transaction(async (tx) => {
+  const [session, err]: Result<Session, FormError<SignupForm>> = await pg.transaction(async (tx) => {
 
     // Check if username is taken.
     if (await db.usernameTaken(tx, form.data.username))
@@ -50,8 +49,10 @@ export async function signup(formData: FormData): Promise<Result<string, FormErr
   if (err)
     return [undefined, err]
 
-  await createSession(accessToken)
-  return [signAccessToken(accessToken), undefined]
+  await storeRefreshToken(session)
+  const accessToken = signSession(session, envars.ACCESS_TOKEN_EXPIRATION_SECONDS)
+
+  return [accessToken, undefined]
 }
 
 export async function signin(formData: FormData): Promise<Result<string, FormError<SigninForm>>> {
@@ -67,15 +68,17 @@ export async function signin(formData: FormData): Promise<Result<string, FormErr
       fieldErrors: { password: ["That user doesn't exist."] }
     }]
 
-  const accessToken = createAccessToken(user)
-  await createSession(accessToken)
-  return [signAccessToken(accessToken), undefined]
+  const session = createSession(user)
+  await storeRefreshToken(session)
+  const accessToken = signSession(session, envars.ACCESS_TOKEN_EXPIRATION_SECONDS)
+
+  return [accessToken, undefined]
 }
 
-async function createSession(accessToken: AccessToken) {
-  const refreshToken = crypto.randomUUID()
+async function storeRefreshToken(session: Session) {
+  await cache.setRefreshToken(session)
 
-  await cache.setSession(refreshToken, accessToken)
+  const refreshToken = signSession(session, envars.ACCESS_TOKEN_EXPIRATION_SECONDS)
 
   const cookieStore = await cookies()
   cookieStore.set("refreshToken", refreshToken, {
@@ -87,8 +90,6 @@ async function createSession(accessToken: AccessToken) {
   })
 }
 
-function signAccessToken(accessToken: AccessToken): string {
-  return JWT.sign(accessToken, envars.JWT_SECRET, {
-    expiresIn: envars.ACCESS_TOKEN_EXPIRATION_SECONDS,
-  })
+function signSession(session: Session, expiresIn: number): string {
+  return JWT.sign(session, envars.JWT_SECRET, { expiresIn })
 }

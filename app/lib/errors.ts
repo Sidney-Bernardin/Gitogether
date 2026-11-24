@@ -1,13 +1,20 @@
 export type Result<T, E = Error> = [T, undefined] | [undefined, E]
 
-export async function tryCatch<T, E = Error>(promise: Promise<T>): Promise<Result<T, E>> {
+export function trySync<T, E = Error>(fn: () => T): Result<T, E> {
+  try {
+    return [fn(), undefined]
+  } catch (err) {
+    return [undefined, err as E]
+  }
+}
+
+export async function tryAsync<T, E = Error>(promise: Promise<T>): Promise<Result<T, E>> {
   try {
     return [await promise, undefined]
   } catch (err) {
     return [undefined, err as E]
   }
 }
-
 
 export const domainErrorTypes = ["username_taken"] as const
 type DomainErrorType = typeof domainErrorTypes[number]
