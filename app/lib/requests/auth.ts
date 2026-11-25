@@ -75,7 +75,12 @@ export async function signin(formData: FormData): Promise<Result<string, FormErr
   return [accessToken, undefined]
 }
 
-async function storeRefreshToken(session: Session) {
+export async function signout(): Promise<void> {
+  const cookieStore = await cookies()
+  cookieStore.delete("refreshToken")
+}
+
+async function storeRefreshToken(session: Session): Promise<void> {
   await cache.setRefreshToken(session)
 
   const refreshToken = signSession(session, envars.ACCESS_TOKEN_EXPIRATION_SECONDS)

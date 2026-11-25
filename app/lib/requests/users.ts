@@ -1,12 +1,18 @@
 "use server"
 
-import { DBQueryConfigColumns, EmptyFilter, RelationsFilterColumns } from "drizzle-orm";
+import { DBQueryConfigColumns } from "drizzle-orm";
 import { pg } from "../db/db";
-import { relations, repositories, users } from "../db/schema";
-import { Session } from "../views";
+import { repositories } from "../db/schema";
+import { DomainError, Session, UserProfile, UserRepositories } from "../views";
 import { cacheLife, cacheTag } from "next/cache";
+import { Result } from "../errors";
 
-export async function getUser(username: string) {
+export async function getUser(username: string): Promise<Result<UserProfile, DomainError>> {
+  "use cache"
+
+  cacheTag(`user:${username}`)
+  cacheLife("minutes")
+
   const user = await pg.query.users.findFirst({
     columns: {
       id: true,
@@ -18,15 +24,18 @@ export async function getUser(username: string) {
   })
 
   if (!user)
-    throw Error("user not found")
+    return [undefined, {
+      type: "user_not_found",
+      msg: "A user with that username doesn't exist.",
+    }]
 
-  return user
+  return [user, undefined]
 }
 
-export async function getUserRepositories(session: Session | undefined, username: string) {
+export async function getUserRepositories(session: Session | undefined, username: string): Promise<Result<UserRepositories, DomainError>> {
   "use cache"
 
-  cacheTag(`user:${username}:repositories`)
+  cacheTag(`user:${username}: repositories`)
   cacheLife("minutes")
 
   const repositoryColumns = {
@@ -75,7 +84,10 @@ export async function getUserRepositories(session: Session | undefined, username
     })
 
   if (!user)
-    throw Error("user not found")
+    return [undefined, {
+      type: "user_not_found",
+      msg: "A user with that username doesn't exist.",
+    }]
 
-  return user
+  return [user, undefined]
 }

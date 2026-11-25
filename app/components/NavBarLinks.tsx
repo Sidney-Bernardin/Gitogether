@@ -3,11 +3,20 @@
 import { useAuth } from "@/context/AuthContext"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useCallback } from "react"
+import { useCallback, useTransition } from "react"
+import * as auth from "@/lib/requests/auth"
 
 export default function NavBarLinks() {
-  const { loggedIn } = useAuth()
+  const { loggedIn, setAccessToken } = useAuth()
   const pathname = usePathname()
+
+  const [signoutPending, startSignout] = useTransition()
+  const signout = (): void => {
+    startSignout(async () => {
+      await auth.signout()
+      setAccessToken(undefined)
+    })
+  }
 
   const fromURL = useCallback((href: string) => {
     const hrefURL = new URL(href, "http://placeholder.com")
@@ -25,6 +34,10 @@ export default function NavBarLinks() {
         <li>
           <Link href={fromURL("/signup")}>signup</Link>
         </li>
+      }
+      {
+        loggedIn &&
+        <button onClick={signout} disabled={signoutPending}>logout</button>
       }
     </ul>
   )

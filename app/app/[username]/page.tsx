@@ -1,5 +1,6 @@
 import { getUser, getUserRepositories } from "@/lib/requests/users"
 import { getRefreshToken } from "@/lib/requests/utils"
+import { notFound } from "next/navigation"
 import { Suspense } from "react"
 
 export default function UserPage(props: PageProps<"/[username]">) {
@@ -18,7 +19,14 @@ export default function UserPage(props: PageProps<"/[username]">) {
 
 async function Header(props: { params: Promise<{ username: string }> }) {
   const params = await props.params
-  const user = await getUser(params.username)
+
+  const [user, err] = await getUser(params.username)
+  if (err) {
+    console.log(`==================${err.type === "user_not_found"} ${err.type}`)
+    if (err.type === "user_not_found")
+      notFound()
+    else throw err
+  }
 
   return (
     <div>
@@ -32,21 +40,22 @@ async function RepositoryList(props: { params: Promise<{ username: string }> }) 
   const params = await props.params
   const refreshToken = await getRefreshToken()
 
-  const {
-    owned_repositories,
-    shared_repositories,
-  } = await getUserRepositories(refreshToken, params.username)
+  const [user, err] = await getUserRepositories(refreshToken, params.username)
+  if (err)
+    if (err.type === "user_not_found")
+      notFound()
+    else throw err
 
   return (
     <ul>
       owned:
-      {owned_repositories.map((repo, idx) =>
+      {user.owned_repositories.map((repo, idx) =>
         <li key={idx}>{repo.reponame}</li>)}
 
       <hr />
 
       shared:
-      {shared_repositories.map((repo, idx) =>
+      {user.shared_repositories.map((repo, idx) =>
         <li key={idx}>{repo.reponame}</li>)}
     </ul>
   )

@@ -1,5 +1,5 @@
 import { defineRelations } from "drizzle-orm"
-import { pgTable, varchar, bytea, bigint, timestamp, index, text, pgEnum, foreignKey, primaryKey, boolean } from "drizzle-orm/pg-core"
+import { pgTable, varchar, bytea, bigint, timestamp, index, text, pgEnum, foreignKey, primaryKey, boolean, integer } from "drizzle-orm/pg-core"
 
 export const contributorRole = pgEnum("contributor_role", ["admin", "developer"])
 
@@ -16,19 +16,19 @@ export const users = pgTable("users", {
 ]))
 
 export const repositories = pgTable("repositories", {
-  id: bigint({ mode: "bigint" }).generatedAlwaysAsIdentity().primaryKey(),
+  id: bigint({ mode: "number" }).generatedAlwaysAsIdentity().primaryKey(),
 
   reponame: text().notNull().unique(),
   description: text().notNull(),
   private: boolean().notNull(),
-  stars: text().notNull(),
+  stars: integer().notNull(),
   tags: text().array().notNull(),
 
   created_at: timestamp({ mode: "string" }).defaultNow().notNull(),
   updated_at: timestamp({ mode: "string" }).defaultNow().notNull(),
 
-  parent_id: bigint({ mode: "bigint" }),
-  owner_id: bigint({ mode: "bigint" }).notNull()
+  parent_id: bigint({ mode: "number" }),
+  owner_id: bigint({ mode: "number" }).notNull()
 }, (table) => [
   foreignKey({
     columns: [table.parent_id],
@@ -40,12 +40,14 @@ export const repositories = pgTable("repositories", {
     foreignColumns: [users.id]
   }).onDelete("cascade"),
 
-  index("reponame").on(table.reponame)
+  index("reponame").on(table.reponame),
+  index("parent_id").on(table.parent_id),
+  index("owner_id").on(table.owner_id)
 ])
 
 export const repository_contributors = pgTable("repository_contributors", {
-  repository_id: bigint({ mode: "bigint" }).notNull(),
-  contributor_id: bigint({ mode: "bigint" }).notNull(),
+  repository_id: bigint({ mode: "number" }).notNull(),
+  contributor_id: bigint({ mode: "number" }).notNull(),
 
   role: contributorRole().notNull(),
 }, (table) => [
@@ -62,10 +64,12 @@ export const repository_contributors = pgTable("repository_contributors", {
     columns: [table.contributor_id],
     foreignColumns: [users.id],
   }).onDelete("cascade"),
+
+  index("contributor_id").on(table.contributor_id)
 ])
 
 export const pull_requests = pgTable("pull_requests", {
-  id: bigint({ mode: "bigint" }).generatedAlwaysAsIdentity().primaryKey(),
+  id: bigint({ mode: "number" }).generatedAlwaysAsIdentity().primaryKey(),
 
   title: text().notNull(),
   description: text().notNull(),
@@ -75,9 +79,9 @@ export const pull_requests = pgTable("pull_requests", {
   created_at: timestamp({ mode: "string" }).defaultNow().notNull(),
   updated_at: timestamp({ mode: "string" }).defaultNow().notNull(),
 
-  owner_id: bigint({ mode: "bigint" }).notNull(),
-  source_id: bigint({ mode: "bigint" }),
-  target_id: bigint({ mode: "bigint" }).notNull(),
+  owner_id: bigint({ mode: "number" }).notNull(),
+  source_id: bigint({ mode: "number" }),
+  target_id: bigint({ mode: "number" }).notNull(),
 }, (table) => [
   foreignKey({
     columns: [table.owner_id],
@@ -93,11 +97,14 @@ export const pull_requests = pgTable("pull_requests", {
     columns: [table.target_id],
     foreignColumns: [repositories.id]
   }).onDelete("cascade"),
+
+  index("owner_id").on(table.owner_id),
+  index("target_id").on(table.target_id),
 ])
 
 export const pr_reviewers = pgTable("pr_reviewers", {
-  pull_request_id: bigint({ mode: "bigint" }).notNull(),
-  reviewer_id: bigint({ mode: "bigint" }).notNull(),
+  pull_request_id: bigint({ mode: "number" }).notNull(),
+  reviewer_id: bigint({ mode: "number" }).notNull(),
 
   approved: boolean().notNull(),
   approval_required: boolean().notNull(),
