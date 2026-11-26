@@ -39,3 +39,13 @@ export default function SignupFormComponent() {
     </Form>
   )
 }
+
+export function FormSkeleton() {
+  return (
+    <div className="flex flex-col gap-1 *:bg-pink-900 *:h-lh">
+      <span />
+      <span />
+      <span />
+    </div>
+  )
+}

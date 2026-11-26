@@ -1,4 +1,4 @@
-import SignupForm from "@/components/SignupForm"
+import SignupForm, { FormSkeleton } from "@/components/SignupForm"
 import Link from "next/link"
 import { Suspense } from "react"
 
@@ -11,7 +11,7 @@ export default function Signup() {
         signin
       </Link>
 
-      <Suspense fallback={<p>signin-form...</p>}>
+      <Suspense fallback={<FormSkeleton />}>
         <SignupForm />
       </Suspense>
     </div>

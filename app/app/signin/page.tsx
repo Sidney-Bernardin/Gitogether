@@ -1,4 +1,5 @@
 import SigninForm from "@/components/SigninForm"
+import { FormSkeleton } from "@/components/SignupForm"
 import Link from "next/link"
 import { Suspense } from "react"
 
@@ -11,7 +12,7 @@ export default async function Signin() {
         signup
       </Link>
 
-      <Suspense fallback={<p>signin-form...</p>}>
+      <Suspense fallback={<FormSkeleton />}>
         <SigninForm />
       </Suspense>
     </div>

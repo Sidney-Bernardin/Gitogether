@@ -1,15 +1,32 @@
 @import "tailwindcss";
 
 :root {
-    --background: #ffffff;
-    --foreground: #171717;
+    --bg-a: hsl(0, 0%, 90%);
+    --bg-b: hsl(0, 0%, 80%);
+    --bg-c: hsl(0, 0%, 70%);
+
+    --fg-a: hsl(0, 0%, 0%);
+    --fg-b: hsl(0, 0%, 30%);
 }
 
 @media (prefers-color-scheme: dark) {
     :root {
-        --background: #0a0a0a;
-        --foreground: #ededed;
+        --bg-a: hsl(0, 0%, 30%);
+        --bg-b: hsl(0, 0%, 20%);
+        --bg-c: hsl(0, 0%, 10%);
+
+        --fg-a: hsl(0, 0%, 100%);
+        --fg-b: hsl(0, 0%, 70%);
     }
+}
+
+@theme {
+    --color-bg-a: var(--bg-a);
+    --color-bg-b: var(--bg-b);
+    --color-bg-c: var(--bg-c);
+
+    --color-fg-a: var(--fg-a);
+    --color-fg-b: var(--fg-b);
 }
 
 html {
@@ -26,8 +43,8 @@ body {
     min-height: 100%;
     display: flex;
     flex-direction: column;
-    color: var(--foreground);
-    background: var(--background);
+    color: var(--fg-c);
+    background: var(--bg-c);
     font-family: Arial, Helvetica, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
