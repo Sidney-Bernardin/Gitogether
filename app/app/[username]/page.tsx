@@ -1,9 +1,9 @@
 import { getUser, getUserRepositories } from "@/lib/requests/users"
 import { getRefreshToken } from "@/lib/requests/utils"
-import { RepositoryListItem } from "@/lib/views"
+import * as Views from "@/lib/views"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ComponentProps, ReactNode, Suspense } from "react"
+import { Suspense } from "react"
 
 export default function UserPage(props: PageProps<"/[username]">) {
   return (
@@ -23,12 +23,10 @@ async function Header(props: { params: Promise<{ username: string }> }) {
   const params = await props.params
 
   const [user, err] = await getUser(params.username)
-  if (err) {
-    console.log(`==================${err.type === "user_not_found"} ${err.type}`)
+  if (err)
     if (err.type === "user_not_found")
       notFound()
     else throw err
-  }
 
   return (
     <div>
@@ -83,9 +81,9 @@ function RepositoryListSkeleton() {
   )
 }
 
-function RepositoryListItem(props: { ownerUsername: string, repository: RepositoryListItem } & ComponentProps<"li">) {
+function RepositoryListItem(props: { ownerUsername: string, repository: Views.RepositoryListItem }) {
   return (
-    <li {...props}>
+    <li>
       <Link href={`${props.ownerUsername}/${props.repository.reponame}`}>{props.repository.reponame}</Link>
     </li>
   )

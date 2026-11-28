@@ -2,7 +2,7 @@ import * as z from "zod"
 
 import { repositories, users } from "./db/schema"
 
-export const domainErrorTypes = ["user_not_found", "username_taken"] as const
+export const domainErrorTypes = ["user_not_found", "username_taken", "repository_not_found"] as const
 type DomainErrorType = typeof domainErrorTypes[number]
 
 export type DomainError = {
@@ -17,6 +17,10 @@ export type FormError<T> = {
 
 export type User = typeof users.$inferSelect
 export type UserProfile = Pick<User, "id" | "created_at">
+export type UserRepositories = {
+  owned_repositories: RepositoryListItem[];
+  shared_repositories: RepositoryListItem[];
+}
 
 export type Session = {
   id: string,
@@ -36,8 +40,6 @@ export function createSession(u: Partial<User> & Pick<User, "id" | "username" | 
 
 export type Repository = typeof repositories.$inferSelect
 export type RepositoryListItem = Pick<Repository, "id" | "reponame">
-
-export type UserRepositories = {
-  owned_repositories: RepositoryListItem[];
-  shared_repositories: RepositoryListItem[];
+export type RepositoryPage = Pick<Repository, "id" | "reponame" | "description" | "tags" | "stars"> & {
+  owner: Pick<User, "id" | "username">
 }

@@ -153,6 +153,7 @@ export const relations = defineRelations(
       owner: r.one.users({
         from: r.repositories.owner_id,
         to: r.users.id,
+        optional: false,
       }),
       pull_requests: r.many.pull_requests({
         from: r.repositories.id,
@@ -167,6 +168,7 @@ export const relations = defineRelations(
       owner: r.one.users({
         from: r.pull_requests.owner_id,
         to: r.users.id,
+        optional: false,
       }),
       source: r.one.repositories({
         from: r.pull_requests.source_id,
@@ -175,6 +177,7 @@ export const relations = defineRelations(
       target: r.one.repositories({
         from: r.pull_requests.target_id,
         to: r.repositories.id,
+        optional: false,
       }),
       reviewers: r.many.users({
         from: r.pull_requests.id.through(r.pr_reviewers.pull_request_id),
